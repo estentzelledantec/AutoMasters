@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="AutoMasters.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vues="clr-namespace:AutoMasters.Vues"
+    Title="AutoMasters"
+    BackgroundColor="#10080B"
+    ForegroundColor="#FFFFFF"
+    TitleColor="#FFFFFF"
+    UnselectedColor="#A0A0A0"
+    Shell.BackgroundColor="#10080B"
+    Shell.ForegroundColor="#FFFFFF"
+    Shell.TitleColor="#FFFFFF"
+    Shell.UnselectedColor="#A0A0A0"
+    Shell.TabBarBackgroundColor="#10080B"
+    Shell.TabBarForegroundColor="#E63946"
+    Shell.TabBarUnselectedColor="#A0A0A0"
+    Shell.TabBarTitleColor="#E63946"
+    Shell.NavBarHasShadow="False">
+
+    <!-- =================================================================== -->
+    <!-- 1. ROUTE RACINE NON AUTHENTIFIÉE (CONNEXION)                        -->
+    <!-- =================================================================== -->
+    <ShellContent
+        Route="ConnexionPage"
+        Title="Connexion"
+        ContentTemplate="{DataTemplate vues:ConnexionPage}" />
+
+    <!-- =================================================================== -->
+    <!-- 2. BARRE D'ONGLETS AUTHENTIFIÉE (5 ONGLETS FIGMA / F20)             -->
+    <!-- =================================================================== -->
+    <TabBar Route="MainTabs">
+        <!-- Onglet 1: Catalogue de véhicules -->
+        <Tab Title="Catalogue" Route="Catalogue">
+            <ShellContent
+                Title="Catalogue"
+                ContentTemplate="{DataTemplate vues:CataloguePage}"
+                Route="CataloguePage" />
+        </Tab>
+
+        <!-- Onglet 2: Marché / Trading -->
+        <Tab Title="Marché" Route="Marche">
+            <ShellContent
+                Title="Marché"
+                ContentTemplate="{DataTemplate vues:MarchePage}"
+                Route="MarchePage" />
+        </Tab>
+
+        <!-- Onglet 3: Ordres (Dédié et Distinct / F33) -->
+        <Tab Title="Ordres" Route="Ordres">
+            <ShellContent
+                Title="Ordres"
+                ContentTemplate="{DataTemplate vues:OrdresPage}"
+                Route="OrdresPage" />
+        </Tab>
+
+        <!-- Onglet 4: Garage / Portefeuille -->
+        <Tab Title="Garage" Route="Garage">
+            <ShellContent
+                Title="Garage"
+                ContentTemplate="{DataTemplate vues:GaragePage}"
+                Route="GaragePage" />
+        </Tab>
+
+        <!-- Onglet 5: Activité -->
+        <Tab Title="Activité" Route="Activite">
+            <ShellContent
+                Title="Activité"
+                ContentTemplate="{DataTemplate vues:ActivitePage}"
+                Route="ActivitePage" />
+        </Tab>
+    </TabBar>
+
+</Shell>

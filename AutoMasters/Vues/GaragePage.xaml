@@ -1,0 +1,660 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:AutoMasters.VuesModeles"
+    xmlns:m="clr-namespace:AutoMasters.Modeles"
+    x:Class="AutoMasters.Vues.GaragePage"
+    x:DataType="vm:GarageVueModele"
+    BackgroundColor="#10080B"
+    Title="Garage"
+    Shell.NavBarIsVisible="False">
+
+    <Grid>
+        <!-- Vue Principale (Scrollable) -->
+        <ScrollView>
+            <VerticalStackLayout Padding="16,12" Spacing="16">
+                
+                <!-- Titre Page -->
+                <Label
+                    Text="GARAGE"
+                    FontSize="24"
+                    FontAttributes="Bold"
+                    TextColor="#FFFFFF" />
+
+                <!-- 1. En-tête Double Devise : PATRIMOINE (Voitures) & PORTEFEUILLE (Argent liquide en Jetons) -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <!-- Carte PATRIMOINE (Valeur de l'ensemble des voitures possédées : Prix / 1 000) -->
+                    <Border
+                        Grid.Column="0"
+                        Stroke="#2A1E24"
+                        StrokeThickness="1"
+                        BackgroundColor="#1A1A1E"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="14,12">
+                        <VerticalStackLayout Spacing="4">
+                            <Label
+                                Text="🏛️ PATRIMOINE"
+                                FontSize="11"
+                                FontAttributes="Bold"
+                                TextColor="#9CA3AF"
+                                CharacterSpacing="1" />
+                            <Label
+                                Text="{Binding PatrimoineJetonsFormate}"
+                                FontSize="22"
+                                FontAttributes="Bold"
+                                TextColor="#FBBF24" />
+                            <Label
+                                Text="{Binding PatrimoineEurosFormate}"
+                                FontSize="11"
+                                TextColor="#D1D5DB" />
+                            <Label
+                                Text="{Binding TotalGainPerteFormate}"
+                                FontSize="11"
+                                FontAttributes="Bold"
+                                TextColor="#10B981">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding EstEnGain}" Value="False">
+                                        <Setter Property="TextColor" Value="#EF4444" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Carte PORTEFEUILLE (Argent liquide en Jetons sur le compte pour acheter au Marché) -->
+                    <Border
+                        Grid.Column="1"
+                        Stroke="#10B981"
+                        StrokeThickness="1"
+                        BackgroundColor="#11221C"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="14,12">
+                        <VerticalStackLayout Spacing="4">
+                            <Label
+                                Text="💰 PORTEFEUILLE"
+                                FontSize="11"
+                                FontAttributes="Bold"
+                                TextColor="#6EE7B7"
+                                CharacterSpacing="1" />
+                            <Label
+                                Text="{Binding PortefeuilleJetonsFormate}"
+                                FontSize="22"
+                                FontAttributes="Bold"
+                                TextColor="#FFFFFF" />
+                            <Label
+                                Text="{Binding PortefeuilleEurosFormate}"
+                                FontSize="11"
+                                TextColor="#A7F3D0" />
+                            <Label
+                                Text="Argent liquide (Marché)"
+                                FontSize="11"
+                                FontAttributes="Bold"
+                                TextColor="#10B981" />
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <!-- 2. Bannière Booster Pack (Figma Screen 2 / F26) -->
+                <Border
+                    Stroke="#E63946"
+                    StrokeThickness="1"
+                    BackgroundColor="#221215"
+                    StrokeShape="RoundRectangle 14"
+                    Padding="16,14">
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <HorizontalStackLayout Grid.Column="0" Spacing="6" VerticalOptions="Center">
+                                <Label Text="BOOSTER" FontSize="16" FontAttributes="Bold" TextColor="#FFFFFF" />
+                                <Label Text="AUTOMASTERS" FontSize="16" FontAttributes="Bold" TextColor="#E63946" />
+                            </HorizontalStackLayout>
+                            <Label
+                                Grid.Column="1"
+                                Text="{Binding QuotaBoosterFormate}"
+                                FontSize="12"
+                                FontAttributes="Bold"
+                                TextColor="#FFFFFF"
+                                VerticalOptions="Center" />
+                        </Grid>
+
+                        <!-- Compte à rebours de recharge -->
+                        <Label
+                            Text="{Binding CompteAReboursBooster}"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            TextColor="#FBBF24" />
+
+                        <!-- Bouton '⚡ OUVRIR' -->
+                        <Button
+                            Text="⚡ OUVRIR"
+                            FontSize="15"
+                            FontAttributes="Bold"
+                            TextColor="#FFFFFF"
+                            BackgroundColor="#E63946"
+                            HeightRequest="46"
+                            CornerRadius="10"
+                            IsEnabled="{Binding PeutOuvrirBooster}"
+                            Command="{Binding OuvrirBoosterCommand}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- 3. Section Collection de Cartes (CollectionView) -->
+                <VerticalStackLayout Spacing="10">
+                    <Label
+                        Text="{Binding TitreCollection}"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        TextColor="#9CA3AF"
+                        CharacterSpacing="1" />
+
+                    <CollectionView
+                        ItemsSource="{Binding CartesPossedees}"
+                        SelectionMode="None">
+                        <CollectionView.EmptyView>
+                            <VerticalStackLayout Spacing="12" HorizontalOptions="Center" VerticalOptions="Center" Padding="32">
+                                <Label Text="🏎️" FontSize="48" HorizontalOptions="Center" />
+                                <Label
+                                    Text="Votre garage est vide"
+                                    FontSize="18"
+                                    FontAttributes="Bold"
+                                    TextColor="#FFFFFF"
+                                    HorizontalOptions="Center" />
+                                <Label
+                                    Text="Ouvrez un booster pour obtenir vos premières voitures !"
+                                    FontSize="13"
+                                    TextColor="#888888"
+                                    HorizontalTextAlignment="Center" />
+                            </VerticalStackLayout>
+                        </CollectionView.EmptyView>
+
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="m:CartePossedee">
+                                <Border
+                                    Stroke="#2A1E24"
+                                    StrokeThickness="1"
+                                    BackgroundColor="#1A1A1E"
+                                    StrokeShape="RoundRectangle 12"
+                                    Padding="12"
+                                    Margin="0,0,0,10">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:GarageVueModele}}, Path=VoirDetailsCarteCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnDefinitions="84,*,Auto" ColumnSpacing="12">
+                                        
+                                        <!-- Miniature + Badge Multiplicateur 'x2' (F25_04, F25_B04, F25_B05) -->
+                                        <Grid Grid.Column="0">
+                                            <Border
+                                                StrokeThickness="0"
+                                                StrokeShape="RoundRectangle 8"
+                                                HeightRequest="64"
+                                                WidthRequest="84"
+                                                BackgroundColor="#242426">
+                                                <Image Source="{Binding Carte.ImageUrl}" Aspect="AspectFill" />
+                                            </Border>
+
+                                            <!-- Badge Multiplicateur (visible si quantité > 1) -->
+                                            <Border
+                                                StrokeThickness="0"
+                                                BackgroundColor="#E63946"
+                                                StrokeShape="RoundRectangle 4"
+                                                Padding="5,1"
+                                                HorizontalOptions="Start"
+                                                VerticalOptions="Start"
+                                                Margin="4,4,0,0">
+                                                <Border.Triggers>
+                                                    <DataTrigger TargetType="Border" Binding="{Binding Quantite}" Value="1">
+                                                        <Setter Property="IsVisible" Value="False" />
+                                                    </DataTrigger>
+                                                </Border.Triggers>
+                                                <Label
+                                                    Text="{Binding QuantiteBadge}"
+                                                    FontSize="10"
+                                                    FontAttributes="Bold"
+                                                    TextColor="#FFFFFF" />
+                                            </Border>
+                                        </Grid>
+
+                                        <!-- Détails Marque, Modèle, Acheté, Rareté -->
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                            <HorizontalStackLayout Spacing="6">
+                                                <Label Text="{Binding Carte.Marque}" FontAttributes="Bold" TextColor="#FFFFFF" FontSize="15" />
+                                                <Border
+                                                    Stroke="#64748B"
+                                                    StrokeThickness="1"
+                                                    BackgroundColor="#1E293B"
+                                                    StrokeShape="RoundRectangle 4"
+                                                    Padding="5,1">
+                                                    <Border.Triggers>
+                                                        <DataTrigger TargetType="Border" Binding="{Binding Carte.Rarete}" Value="LÉGENDAIRE">
+                                                            <Setter Property="Stroke" Value="#F59E0B" />
+                                                            <Setter Property="BackgroundColor" Value="#78350F" />
+                                                        </DataTrigger>
+                                                        <DataTrigger TargetType="Border" Binding="{Binding Carte.Rarete}" Value="ÉPIQUE">
+                                                            <Setter Property="Stroke" Value="#EC4899" />
+                                                            <Setter Property="BackgroundColor" Value="#701A75" />
+                                                        </DataTrigger>
+                                                        <DataTrigger TargetType="Border" Binding="{Binding Carte.Rarete}" Value="RARE">
+                                                            <Setter Property="Stroke" Value="#0284C7" />
+                                                            <Setter Property="BackgroundColor" Value="#0C4A6E" />
+                                                        </DataTrigger>
+                                                    </Border.Triggers>
+                                                    <Label Text="{Binding Carte.Rarete}" FontSize="9" FontAttributes="Bold" TextColor="#9CA3AF">
+                                                        <Label.Triggers>
+                                                            <DataTrigger TargetType="Label" Binding="{Binding Carte.Rarete}" Value="LÉGENDAIRE">
+                                                                <Setter Property="TextColor" Value="#F59E0B" />
+                                                            </DataTrigger>
+                                                            <DataTrigger TargetType="Label" Binding="{Binding Carte.Rarete}" Value="ÉPIQUE">
+                                                                <Setter Property="TextColor" Value="#EC4899" />
+                                                            </DataTrigger>
+                                                            <DataTrigger TargetType="Label" Binding="{Binding Carte.Rarete}" Value="RARE">
+                                                                <Setter Property="TextColor" Value="#0284C7" />
+                                                            </DataTrigger>
+                                                        </Label.Triggers>
+                                                    </Label>
+                                                </Border>
+                                            </HorizontalStackLayout>
+
+                                            <Label Text="{Binding Carte.Modele}" TextColor="#9CA3AF" FontSize="12" />
+                                            <Label Text="{Binding ValeurActuelleFormatee, StringFormat='Prix réel : {0}'}" TextColor="#D1D5DB" FontSize="11" />
+                                            <Label Text="{Binding ValeurJetonsFormatee, StringFormat='🪙 Valeur : {0}'}" TextColor="#FBBF24" FontAttributes="Bold" FontSize="11" />
+                                        </VerticalStackLayout>
+
+                                        <!-- Valeur Actuelle, P&L & Boutons Vendre (Portefeuille / Marché) -->
+                                        <VerticalStackLayout Grid.Column="2" Spacing="3" HorizontalOptions="End" VerticalOptions="Center">
+                                            <Label
+                                                Text="{Binding ValeurJetonsFormatee}"
+                                                FontAttributes="Bold"
+                                                TextColor="#FBBF24"
+                                                FontSize="13"
+                                                HorizontalTextAlignment="End" />
+                                            <Label
+                                                Text="{Binding GainPerteJetonsFormate}"
+                                                FontAttributes="Bold"
+                                                TextColor="#10B981"
+                                                FontSize="11"
+                                                HorizontalTextAlignment="End" />
+                                            <!-- Boutons d'action lorsque la voiture est libre dans le garage -->
+                                            <HorizontalStackLayout Spacing="6" HorizontalOptions="End" IsVisible="{Binding EstDisponibleDansGarage}">
+                                                <Button
+                                                    Text="💰 Vendre"
+                                                    FontSize="10"
+                                                    FontAttributes="Bold"
+                                                    TextColor="#10B981"
+                                                    BackgroundColor="#112920"
+                                                    CornerRadius="6"
+                                                    HeightRequest="26"
+                                                    Padding="8,0"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:GarageVueModele}}, Path=VendreCarteDirecteCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                                <Button
+                                                    Text="🏷 Marché"
+                                                    FontSize="10"
+                                                    FontAttributes="Bold"
+                                                    TextColor="#E63946"
+                                                    BackgroundColor="#2A1215"
+                                                    CornerRadius="6"
+                                                    HeightRequest="26"
+                                                    Padding="8,0"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:GarageVueModele}}, Path=VendreCarteCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                                <Button
+                                                    Text="🎁 Offrir"
+                                                    FontSize="10"
+                                                    FontAttributes="Bold"
+                                                    TextColor="#EC4899"
+                                                    BackgroundColor="#2D1122"
+                                                    CornerRadius="6"
+                                                    HeightRequest="26"
+                                                    Padding="8,0"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:GarageVueModele}}, Path=OffrirCarteCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                            </HorizontalStackLayout>
+
+                                            <!-- Statut affiché tant que la voiture mise en vente n'est pas encore vendue -->
+                                            <HorizontalStackLayout Spacing="6" HorizontalOptions="End" IsVisible="{Binding EstEnVenteSurMarche}">
+                                                <Border
+                                                    Stroke="#3B82F6"
+                                                    StrokeThickness="1"
+                                                    BackgroundColor="#111C2D"
+                                                    StrokeShape="RoundRectangle 6"
+                                                    HeightRequest="26"
+                                                    Padding="8,0">
+                                                    <Label
+                                                        Text="🏷 En vente"
+                                                        FontSize="10"
+                                                        FontAttributes="Bold"
+                                                        TextColor="#60A5FA"
+                                                        VerticalOptions="Center" />
+                                                </Border>
+                                                <Button
+                                                    Text="✕ Retirer"
+                                                    FontSize="10"
+                                                    FontAttributes="Bold"
+                                                    TextColor="#EF4444"
+                                                    BackgroundColor="#2A1215"
+                                                    CornerRadius="6"
+                                                    HeightRequest="26"
+                                                    Padding="8,0"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:GarageVueModele}}, Path=RetirerVenteCarteCommand}"
+                                                    CommandParameter="{Binding .}" />
+                                            </HorizontalStackLayout>
+                                        </VerticalStackLayout>
+
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <!-- Barre de pagination (14 voitures par page, affichée uniquement s'il y a au moins 2 pages) -->
+                    <Border
+                        IsVisible="{Binding AfficherPagination}"
+                        Stroke="#331A20"
+                        StrokeThickness="1"
+                        BackgroundColor="#180D11"
+                        StrokeShape="RoundRectangle 12"
+                        Padding="10,6"
+                        Margin="0,4,0,6">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" VerticalOptions="Center">
+                            <Button
+                                Grid.Column="0"
+                                Text="◀ Précédent"
+                                Command="{Binding PagePrecedenteCommand}"
+                                IsEnabled="{Binding PeutAllerPagePrecedente}"
+                                BackgroundColor="#241317"
+                                TextColor="#FFFFFF"
+                                BorderColor="#3D1E25"
+                                BorderWidth="1"
+                                CornerRadius="8"
+                                HeightRequest="36"
+                                Padding="12,0"
+                                FontSize="12"
+                                FontAttributes="Bold" />
+
+                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+                                <HorizontalStackLayout Spacing="6" HorizontalOptions="Center" VerticalOptions="Center">
+                                    <Label
+                                        Text="Page"
+                                        FontSize="12"
+                                        FontAttributes="Bold"
+                                        TextColor="#D1D5DB"
+                                        VerticalOptions="Center" />
+                                    <Border
+                                        Stroke="#E63946"
+                                        StrokeThickness="1"
+                                        BackgroundColor="#241317"
+                                        StrokeShape="RoundRectangle 6"
+                                        Padding="4,0"
+                                        HeightRequest="28"
+                                        WidthRequest="46"
+                                        VerticalOptions="Center">
+                                        <Entry
+                                            Text="{Binding SaisiePage}"
+                                            Keyboard="Numeric"
+                                            ReturnCommand="{Binding AllerAPageCommand}"
+                                            FontSize="12"
+                                            FontAttributes="Bold"
+                                            TextColor="#FFFFFF"
+                                            BackgroundColor="Transparent"
+                                            HorizontalTextAlignment="Center"
+                                            VerticalTextAlignment="Center"
+                                            Margin="0,-4" />
+                                    </Border>
+                                    <Label
+                                        Text="{Binding NombreTotalPages, StringFormat='/ {0}'}"
+                                        FontSize="12"
+                                        FontAttributes="Bold"
+                                        TextColor="#FFFFFF"
+                                        VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                                <Label
+                                    Text="14 voitures par page"
+                                    FontSize="10"
+                                    TextColor="#9CA3AF"
+                                    HorizontalTextAlignment="Center" />
+                            </VerticalStackLayout>
+
+                            <Button
+                                Grid.Column="2"
+                                Text="Suivant ▶"
+                                Command="{Binding PageSuivanteCommand}"
+                                IsEnabled="{Binding PeutAllerPageSuivante}"
+                                BackgroundColor="#E63946"
+                                TextColor="#FFFFFF"
+                                CornerRadius="8"
+                                HeightRequest="36"
+                                Padding="14,0"
+                                FontSize="12"
+                                FontAttributes="Bold" />
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Indicateur de chargement central (Feature F32) -->
+        <ActivityIndicator
+            Color="#E63946"
+            IsRunning="{Binding EstOccupe}"
+            IsVisible="{Binding EstOccupe}"
+            HorizontalOptions="Center"
+            VerticalOptions="Center"
+            WidthRequest="48"
+            HeightRequest="48"
+            ZIndex="50" />
+
+        <!-- 4. Overlay Modale d'Ouverture Booster 3 Cartes (Figma Screen 3 / F26, F32) -->
+        <Border
+            BackgroundColor="#F010080B"
+            StrokeThickness="0"
+            IsVisible="{Binding EstBoosterModalOuvert}"
+            Padding="20"
+            ZIndex="99">
+            <VerticalStackLayout VerticalOptions="Center" Spacing="16">
+                <!-- Bouton fermeture modale -->
+                <Button
+                    Text="✕"
+                    FontSize="18"
+                    TextColor="#FFFFFF"
+                    BackgroundColor="#221215"
+                    CornerRadius="16"
+                    WidthRequest="36"
+                    HeightRequest="36"
+                    HorizontalOptions="End"
+                    Command="{Binding FermerBoosterModalCommand}" />
+
+                <Label
+                    Text="BOOSTER AUTOMASTERS (3 CARTES)"
+                    FontSize="20"
+                    FontAttributes="Bold"
+                    TextColor="#FFFFFF"
+                    HorizontalTextAlignment="Center" />
+
+                <!-- Barres de progression 3 segments en pur XAML (1 segment par carte du booster) -->
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" Margin="32,0">
+                    <BoxView Grid.Column="0" HeightRequest="5" Color="#331A20" CornerRadius="2.5">
+                        <BoxView.Triggers>
+                            <DataTrigger TargetType="BoxView" Binding="{Binding BoosterVueModele.Segment1Actif}" Value="True">
+                                <Setter Property="Color" Value="#E63946" />
+                            </DataTrigger>
+                        </BoxView.Triggers>
+                    </BoxView>
+                    <BoxView Grid.Column="1" HeightRequest="5" Color="#331A20" CornerRadius="2.5">
+                        <BoxView.Triggers>
+                            <DataTrigger TargetType="BoxView" Binding="{Binding BoosterVueModele.Segment2Actif}" Value="True">
+                                <Setter Property="Color" Value="#E63946" />
+                            </DataTrigger>
+                        </BoxView.Triggers>
+                    </BoxView>
+                    <BoxView Grid.Column="2" HeightRequest="5" Color="#331A20" CornerRadius="2.5">
+                        <BoxView.Triggers>
+                            <DataTrigger TargetType="BoxView" Binding="{Binding BoosterVueModele.Segment3Actif}" Value="True">
+                                <Setter Property="Color" Value="#E63946" />
+                            </DataTrigger>
+                        </BoxView.Triggers>
+                    </BoxView>
+                </Grid>
+
+                <Label
+                    Text="{Binding BoosterVueModele.TexteProgression}"
+                    FontSize="13"
+                    TextColor="#9CA3AF"
+                    HorizontalTextAlignment="Center" />
+
+                <!-- Carte (Face verso cachée ou Face recto révélée) en pur XAML (Feature F32) -->
+                <Border
+                    Stroke="#9CA3AF"
+                    StrokeThickness="2"
+                    BackgroundColor="#1E1014"
+                    StrokeShape="RoundRectangle 16"
+                    HeightRequest="355"
+                    WidthRequest="245"
+                    HorizontalOptions="Center"
+                    Padding="14">
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border" Binding="{Binding BoosterVueModele.CarteActuelle.Rarete}" Value="LÉGENDAIRE">
+                            <Setter Property="Stroke" Value="#F59E0B" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Border" Binding="{Binding BoosterVueModele.CarteActuelle.Rarete}" Value="ÉPIQUE">
+                            <Setter Property="Stroke" Value="#A855F7" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Border" Binding="{Binding BoosterVueModele.CarteActuelle.Rarete}" Value="RARE">
+                            <Setter Property="Stroke" Value="#38BDF8" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Grid>
+                        <!-- Face cachée (avant retournement) -->
+                        <VerticalStackLayout
+                            VerticalOptions="Center"
+                            Spacing="12"
+                            IsVisible="{Binding BoosterVueModele.EstFaceCachee}">
+                            <Label Text="🏎️" FontSize="56" HorizontalOptions="Center" />
+                            <Label
+                                Text="AUTOMASTERS"
+                                FontSize="16"
+                                FontAttributes="Bold"
+                                TextColor="#E63946"
+                                CharacterSpacing="2"
+                                HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+
+                        <!-- Face révélée (après retournement) -->
+                        <VerticalStackLayout
+                            Spacing="4"
+                            IsVisible="{Binding BoosterVueModele.EstRetournee}">
+                            <Grid>
+                                <Border
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 12"
+                                    Padding="0"
+                                    HeightRequest="155"
+                                    BackgroundColor="#140C10">
+                                    <Image
+                                        Source="{Binding BoosterVueModele.CarteActuelle.ImageUrl}"
+                                        HeightRequest="155"
+                                        Aspect="AspectFit" />
+                                </Border>
+                                <Border
+                                    StrokeThickness="0"
+                                    BackgroundColor="#64748B"
+                                    StrokeShape="RoundRectangle 6"
+                                    Padding="6,2"
+                                    Margin="6"
+                                    HorizontalOptions="Start"
+                                    VerticalOptions="Start">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding BoosterVueModele.CarteActuelle.Rarete}" Value="LÉGENDAIRE">
+                                            <Setter Property="BackgroundColor" Value="#F59E0B" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border" Binding="{Binding BoosterVueModele.CarteActuelle.Rarete}" Value="ÉPIQUE">
+                                            <Setter Property="BackgroundColor" Value="#EC4899" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border" Binding="{Binding BoosterVueModele.CarteActuelle.Rarete}" Value="RARE">
+                                            <Setter Property="BackgroundColor" Value="#0284C7" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label
+                                        Text="{Binding BoosterVueModele.CarteActuelle.BadgeRareteCourt}"
+                                        FontSize="11"
+                                        FontAttributes="Bold"
+                                        TextColor="#10080B" />
+                                </Border>
+                                <Label
+                                    Text="★"
+                                    FontSize="16"
+                                    TextColor="#FBBF24"
+                                    Margin="6"
+                                    HorizontalOptions="End"
+                                    VerticalOptions="Start" />
+                            </Grid>
+                            <Label
+                                Text="{Binding BoosterVueModele.CarteActuelle.Marque}"
+                                FontSize="17"
+                                FontAttributes="Bold"
+                                TextColor="#FFFFFF" />
+                            <Label
+                                Text="{Binding BoosterVueModele.CarteActuelle.Modele}"
+                                FontSize="13"
+                                TextColor="#D1D5DB" />
+                            <Label
+                                Text="{Binding BoosterVueModele.LibelleRareteActuelle}"
+                                FontSize="11"
+                                FontAttributes="Bold"
+                                TextColor="#9CA3AF">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding BoosterVueModele.CarteActuelle.Rarete}" Value="LÉGENDAIRE">
+                                        <Setter Property="TextColor" Value="#F59E0B" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Label" Binding="{Binding BoosterVueModele.CarteActuelle.Rarete}" Value="ÉPIQUE">
+                                        <Setter Property="TextColor" Value="#A855F7" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Label" Binding="{Binding BoosterVueModele.CarteActuelle.Rarete}" Value="RARE">
+                                        <Setter Property="TextColor" Value="#38BDF8" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                            <Label
+                                Text="{Binding BoosterVueModele.CarteActuelle.PrixReelFormate, StringFormat='💶 {0}'}"
+                                FontSize="11"
+                                FontAttributes="Bold"
+                                TextColor="#E5E7EB" />
+                            <Label
+                                Text="{Binding BoosterVueModele.CarteActuelle.ValeurJetonsFormatee, StringFormat='🪙 +{0}'}"
+                                FontSize="12"
+                                FontAttributes="Bold"
+                                TextColor="#FBBF24" />
+                            <BoxView HeightRequest="1" Color="#FFFFFF" Opacity="0.15" Margin="0,2" />
+                            <Grid ColumnDefinitions="*,*">
+                                <HorizontalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                                    <Label Text="⚡" TextColor="#E63946" FontSize="11" />
+                                    <Label Text="{Binding BoosterVueModele.CarteActuelle.PuissanceFormatee}" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold" />
+                                </HorizontalStackLayout>
+                                <HorizontalStackLayout Grid.Column="1" Spacing="4" HorizontalOptions="End" VerticalOptions="Center">
+                                    <Label Text="🏎️" TextColor="#38BDF8" FontSize="11" />
+                                    <Label Text="{Binding BoosterVueModele.CarteActuelle.VitesseMaxFormatee}" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold" />
+                                </HorizontalStackLayout>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <!-- Bouton d'Action : RETOURNER ▶ ou SUIVANT -->
+                <Button
+                    Text="{Binding BoosterVueModele.LibelleBoutonAction}"
+                    FontSize="15"
+                    FontAttributes="Bold"
+                    TextColor="#FFFFFF"
+                    BackgroundColor="#E63946"
+                    HeightRequest="48"
+                    CornerRadius="10"
+                    WidthRequest="240"
+                    HorizontalOptions="Center"
+                    Command="{Binding BoosterVueModele.ActionCarteSuivanteCommand}" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+
+</ContentPage>

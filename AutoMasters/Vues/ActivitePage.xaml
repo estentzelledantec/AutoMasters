@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AutoMasters.VuesModeles"
+             xmlns:modeles="clr-namespace:AutoMasters.Modeles"
+             x:Class="AutoMasters.Vues.ActivitePage"
+             x:DataType="vm:ActiviteVueModele"
+             Title="Activité"
+             BackgroundColor="#10080B"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
+
+        <!-- ================================================================= -->
+        <!-- 1. EN-TÊTE JOURNAL D'ACTIVITÉ & PROFIL COMPTE GROUPE 2            -->
+        <!-- ================================================================= -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Padding="20,24,20,12">
+            <VerticalStackLayout Grid.Column="0" Spacing="4">
+                <Label Text="JOURNAL D'ACTIVITÉ"
+                       TextColor="#E63946"
+                       FontSize="11"
+                       FontAttributes="Bold"
+                       CharacterSpacing="1.5" />
+                <Label Text="Historique &amp; Flux Réseau"
+                       TextColor="#FFFFFF"
+                       FontSize="26"
+                       FontAttributes="Bold" />
+            </VerticalStackLayout>
+
+            <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
+                <Button Text="↻"
+                        Command="{Binding ChargerActivitesCommand}"
+                        BackgroundColor="#1A0E12"
+                        TextColor="#FFFFFF"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        CornerRadius="12"
+                        HeightRequest="40"
+                        WidthRequest="44" />
+                <Button Text="Déconnexion"
+                        Command="{Binding SeDeconnecterCommand}"
+                        BackgroundColor="#2A1215"
+                        TextColor="#E63946"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        CornerRadius="12"
+                        HeightRequest="40"
+                        Padding="12,0" />
+            </HorizontalStackLayout>
+        </Grid>
+
+        <!-- ================================================================= -->
+        <!-- 2. BANDEAU STATISTIQUES DE SESSION                                -->
+        <!-- ================================================================= -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12" Padding="20,0,20,14">
+            <Border Grid.Column="0"
+                    BackgroundColor="#1A0E12"
+                    Stroke="#382026"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="16,14">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="OPÉRATIONS ENREGISTRÉES"
+                           TextColor="#A0A0A0"
+                           FontSize="10"
+                           FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                        <Label Text="{Binding NombreTotalOperations}"
+                               TextColor="#FFFFFF"
+                               FontSize="22"
+                               FontAttributes="Bold" />
+                        <Border BackgroundColor="#2A151B"
+                                StrokeShape="RoundRectangle 8"
+                                Padding="8,3"
+                                VerticalOptions="Center">
+                            <Label Text="{Binding UtilisateurActuel}"
+                                   TextColor="#10B981"
+                                   FontSize="10"
+                                   FontAttributes="Bold" />
+                        </Border>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Grid.Column="1"
+                    BackgroundColor="#1A0E12"
+                    Stroke="#382026"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="16,14">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="VOLUME CUMULÉ D'ÉCHANGES"
+                           TextColor="#A0A0A0"
+                           FontSize="10"
+                           FontAttributes="Bold" />
+                    <Label Text="{Binding VolumeTotalJetonsFormate}"
+                           TextColor="#F59E0B"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           LineBreakMode="TailTruncation" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <!-- ================================================================= -->
+        <!-- 3. FILTRES PAR TYPE D'OPÉRATION                                   -->
+        <!-- ================================================================= -->
+        <ScrollView Grid.Row="2" Orientation="Horizontal" HorizontalScrollBarVisibility="Never" Padding="20,0,20,12">
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="Toutes"
+                        Command="{Binding FiltrerParTypeCommand}"
+                        CommandParameter="TOUT"
+                        BackgroundColor="#E63946"
+                        TextColor="#FFFFFF"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        CornerRadius="16"
+                        HeightRequest="34"
+                        Padding="14,0" />
+                <Button Text="⚡ Boosters"
+                        Command="{Binding FiltrerParTypeCommand}"
+                        CommandParameter="BOOSTER"
+                        BackgroundColor="#1A0E12"
+                        TextColor="#F59E0B"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        CornerRadius="16"
+                        HeightRequest="34"
+                        Padding="14,0" />
+                <Button Text="🛒 Achats"
+                        Command="{Binding FiltrerParTypeCommand}"
+                        CommandParameter="ACHAT"
+                        BackgroundColor="#1A0E12"
+                        TextColor="#EF4444"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        CornerRadius="16"
+                        HeightRequest="34"
+                        Padding="14,0" />
+                <Button Text="🏷 Mises en vente"
+                        Command="{Binding FiltrerParTypeCommand}"
+                        CommandParameter="MISE EN VENTE"
+                        BackgroundColor="#1A0E12"
+                        TextColor="#3B82F6"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        CornerRadius="16"
+                        HeightRequest="34"
+                        Padding="14,0" />
+                <Button Text="🔒 Réservations"
+                        Command="{Binding FiltrerParTypeCommand}"
+                        CommandParameter="RÉSERVATION"
+                        BackgroundColor="#1A0E12"
+                        TextColor="#10B981"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        CornerRadius="16"
+                        HeightRequest="34"
+                        Padding="14,0" />
+                <Button Text="🎁 Cadeaux"
+                        Command="{Binding FiltrerParTypeCommand}"
+                        CommandParameter="CADEAU"
+                        BackgroundColor="#1A0E12"
+                        TextColor="#EC4899"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        CornerRadius="16"
+                        HeightRequest="34"
+                        Padding="14,0" />
+            </HorizontalStackLayout>
+        </ScrollView>
+
+        <!-- ================================================================= -->
+        <!-- 4. LISTE DES TRANSACTIONS & OPÉRATIONS                            -->
+        <!-- ================================================================= -->
+        <RefreshView Grid.Row="3"
+                     IsRefreshing="{Binding EstOccupe}"
+                     Command="{Binding ChargerActivitesCommand}"
+                     RefreshColor="#E63946">
+            <CollectionView ItemsSource="{Binding Activites}"
+                            Margin="20,0,20,20"
+                            SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout VerticalOptions="Center"
+                                         HorizontalOptions="Center"
+                                         Padding="32"
+                                         Spacing="10">
+                        <Label Text="Aucune activité dans cette catégorie"
+                               TextColor="#FFFFFF"
+                               FontSize="17"
+                               FontAttributes="Bold"
+                               HorizontalTextAlignment="Center" />
+                        <Label Text="Ouvrez un booster dans votre Garage ou effectuez une transaction sur le Marché pour alimenter votre journal."
+                               TextColor="#A0A0A0"
+                               FontSize="13"
+                               HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="modeles:TransactionActivite">
+                        <Border BackgroundColor="#1A0E12"
+                                Stroke="#382026"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 16"
+                                Padding="16,14">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+
+                                <!-- Badge coloré du type d'opération en pur XAML -->
+                                <Border Grid.Column="0"
+                                        BackgroundColor="#E63946"
+                                        StrokeShape="RoundRectangle 10"
+                                        Padding="10,6"
+                                        VerticalOptions="Center">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding TypeOperation}" Value="BOOSTER">
+                                            <Setter Property="BackgroundColor" Value="#F59E0B" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border" Binding="{Binding TypeOperation}" Value="MISE EN VENTE">
+                                            <Setter Property="BackgroundColor" Value="#3B82F6" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border" Binding="{Binding TypeOperation}" Value="VENTE GARAGE">
+                                            <Setter Property="BackgroundColor" Value="#10B981" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border" Binding="{Binding TypeOperation}" Value="RÉSERVATION">
+                                            <Setter Property="BackgroundColor" Value="#F59E0B" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border" Binding="{Binding TypeOperation}" Value="CONNEXION">
+                                            <Setter Property="BackgroundColor" Value="#10B981" />
+                                        </DataTrigger>
+                                        <DataTrigger TargetType="Border" Binding="{Binding TypeOperation}" Value="CADEAU">
+                                            <Setter Property="BackgroundColor" Value="#EC4899" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="{Binding TypeOperation}"
+                                           TextColor="#FFFFFF"
+                                           FontSize="10"
+                                           FontAttributes="Bold" />
+                                </Border>
+
+                                <!-- Détails de l'opération -->
+                                <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                    <Label Text="{Binding Titre}"
+                                           TextColor="#FFFFFF"
+                                           FontSize="14"
+                                           FontAttributes="Bold"
+                                           LineBreakMode="TailTruncation" />
+                                    <Label Text="{Binding SousTitre}"
+                                           TextColor="#A0A0A0"
+                                           FontSize="12"
+                                           LineBreakMode="TailTruncation" />
+                                    <Label Text="{Binding DateFormatee}"
+                                           TextColor="#64748B"
+                                           FontSize="11" />
+                                </VerticalStackLayout>
+
+                                <!-- Montant / Valorisation en pur XAML -->
+                                <VerticalStackLayout Grid.Column="2"
+                                                     VerticalOptions="Center"
+                                                     HorizontalOptions="End">
+                                    <Label Text="{Binding MontantJetonsFormate}"
+                                           TextColor="#10B981"
+                                           FontSize="13"
+                                           FontAttributes="Bold"
+                                           HorizontalTextAlignment="End">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding EstPositif}" Value="False">
+                                                <Setter Property="TextColor" Value="#EF4444" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </VerticalStackLayout>
+
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+    </Grid>
+</ContentPage>

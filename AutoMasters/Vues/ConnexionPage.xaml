@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:AutoMasters.VuesModeles"
+    x:Class="AutoMasters.Vues.ConnexionPage"
+    x:DataType="vm:ConnexionVueModele"
+    BackgroundColor="#10080B"
+    Shell.NavBarIsVisible="False"
+    Title="Connexion">
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="28,40"
+            Spacing="18"
+            VerticalOptions="Center"
+            MaximumWidthRequest="420"
+            HorizontalOptions="Center">
+
+            <!-- 1. BADGE LOGO AUTOMASTERS SQUIRCLE FIGMA -->
+            <Border
+                Stroke="#E63946"
+                StrokeThickness="2"
+                WidthRequest="72"
+                HeightRequest="72"
+                HorizontalOptions="Center"
+                StrokeShape="RoundRectangle 16"
+                BackgroundColor="#221215">
+                <Label
+                    Text="🏎️"
+                    FontSize="34"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center" />
+            </Border>
+
+            <!-- 2. TITRE BI-COLORE & SOUS-TITRE FIGMA -->
+            <Label HorizontalTextAlignment="Center" CharacterSpacing="2">
+                <Label.FormattedText>
+                    <FormattedString>
+                        <Span Text="AUTO" TextColor="#FFFFFF" FontAttributes="Bold" FontSize="26" />
+                        <Span Text=" " />
+                        <Span Text="MASTERS" TextColor="#E63946" FontAttributes="Bold" FontSize="26" />
+                    </FormattedString>
+                </Label.FormattedText>
+            </Label>
+
+            <Label
+                Text="Collecte · Échange · Compétition"
+                FontSize="12"
+                TextColor="#A0A0A0"
+                CharacterSpacing="1"
+                HorizontalTextAlignment="Center"
+                Margin="0,-8,0,12" />
+
+            <!-- 3. FORMULAIRE : IDENTIFIANT -->
+            <VerticalStackLayout Spacing="6">
+                <Label
+                    Text="IDENTIFIANT"
+                    FontSize="11"
+                    FontAttributes="Bold"
+                    TextColor="#A0A0A0"
+                    CharacterSpacing="1" />
+                <Border
+                    Stroke="#331A20"
+                    StrokeThickness="1"
+                    BackgroundColor="#1E1014"
+                    StrokeShape="RoundRectangle 10"
+                    HeightRequest="50"
+                    Padding="14,0">
+                    <Entry
+                        Text="{Binding Identifiant}"
+                        Placeholder="Identifiant (ex: alice)"
+                        PlaceholderColor="#666666"
+                        TextColor="#FFFFFF"
+                        Keyboard="Text"
+                        ClearButtonVisibility="WhileEditing"
+                        VerticalOptions="Center" />
+                </Border>
+            </VerticalStackLayout>
+
+            <!-- 4. FORMULAIRE : MOT DE PASSE -->
+            <VerticalStackLayout Spacing="6">
+                <Label
+                    Text="MOT DE PASSE"
+                    FontSize="11"
+                    FontAttributes="Bold"
+                    TextColor="#A0A0A0"
+                    CharacterSpacing="1" />
+                <Border
+                    Stroke="#331A20"
+                    StrokeThickness="1"
+                    BackgroundColor="#1E1014"
+                    StrokeShape="RoundRectangle 10"
+                    HeightRequest="50"
+                    Padding="14,0">
+                    <Entry
+                        Text="{Binding MotDePasse}"
+                        Placeholder="••••••••••••"
+                        PlaceholderColor="#666666"
+                        TextColor="#FFFFFF"
+                        IsPassword="True"
+                        ClearButtonVisibility="WhileEditing"
+                        VerticalOptions="Center" />
+                </Border>
+            </VerticalStackLayout>
+
+            <!-- 6. BOUTON PRINCIPAL SE CONNECTER -->
+            <Button
+                Text="SE CONNECTER"
+                FontAttributes="Bold"
+                FontSize="15"
+                TextColor="#FFFFFF"
+                BackgroundColor="#E63946"
+                CornerRadius="12"
+                HeightRequest="52"
+                IsEnabled="{Binding EstDisponible}"
+                Command="{Binding SeConnecterCommand}" />
+
+            <!-- 8. INDICATEUR DE CHARGEMENT ET BANDEAU D'ERREUR -->
+            <ActivityIndicator
+                Color="#E63946"
+                IsRunning="{Binding EstOccupe}"
+                IsVisible="{Binding EstOccupe}"
+                HeightRequest="36" />
+
+            <Label
+                Text="{Binding Message}"
+                TextColor="#E63946"
+                FontSize="13"
+                HorizontalTextAlignment="Center"
+                LineBreakMode="WordWrap"
+                IsVisible="{Binding AUnMessage}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

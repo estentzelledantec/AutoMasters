@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- =================================================================== -->
+    <!-- STYLE GLOBAL APPSHELL (F19, F20, F27)                               -->
+    <!-- =================================================================== -->
+    <Style TargetType="Shell" ApplyToDerivedTypes="True">
+        <Setter Property="Shell.BackgroundColor" Value="{StaticResource ColorBackground}" />
+        <Setter Property="Shell.ForegroundColor" Value="{StaticResource ColorTextPrimary}" />
+        <Setter Property="Shell.TitleColor" Value="{StaticResource ColorTextPrimary}" />
+        <Setter Property="Shell.UnselectedColor" Value="{StaticResource ColorTextSecondary}" />
+        <Setter Property="Shell.TabBarBackgroundColor" Value="{StaticResource ColorBackground}" />
+        <Setter Property="Shell.TabBarForegroundColor" Value="{StaticResource ColorPrimaryRed}" />
+        <Setter Property="Shell.TabBarUnselectedColor" Value="{StaticResource ColorTextSecondary}" />
+        <Setter Property="Shell.TabBarTitleColor" Value="{StaticResource ColorPrimaryRed}" />
+        <Setter Property="Shell.NavBarHasShadow" Value="False" />
+    </Style>
+
+    <!-- =================================================================== -->
+    <!-- STYLE GLOBAL PAGES ET CONTENEURS                                    -->
+    <!-- =================================================================== -->
+    <Style TargetType="ContentPage" ApplyToDerivedTypes="True">
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorBackground}" />
+    </Style>
+
+    <Style TargetType="ActivityIndicator">
+        <Setter Property="Color" Value="{StaticResource ColorPrimaryRed}" />
+    </Style>
+
+    <!-- =================================================================== -->
+    <!-- STYLE BOUTONS PAR DÉFAUT                                            -->
+    <!-- =================================================================== -->
+    <Style TargetType="Button">
+        <Setter Property="TextColor" Value="{StaticResource ColorTextPrimary}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorPrimaryRed}" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="14,10" />
+        <Setter Property="MinimumHeightRequest" Value="44" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="TextColor" Value="{StaticResource ColorTextSecondary}" />
+                            <Setter Property="BackgroundColor" Value="#331A20" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="PointerOver" />
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <!-- =================================================================== -->
+    <!-- STYLE ENTRY PAR DÉFAUT                                              -->
+    <!-- =================================================================== -->
+    <Style TargetType="Entry">
+        <Setter Property="TextColor" Value="{StaticResource ColorTextPrimary}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="PlaceholderColor" Value="{StaticResource ColorTextSecondary}" />
+        <Setter Property="MinimumHeightRequest" Value="44" />
+    </Style>
+
+    <!-- =================================================================== -->
+    <!-- STYLE BORDER PAR DÉFAUT (CARTES AUTOMOBILES)                        -->
+    <!-- =================================================================== -->
+    <Style TargetType="Border">
+        <Setter Property="Stroke" Value="{StaticResource ColorBorder}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorSurfaceCard}" />
+    </Style>
+
+    <!-- =================================================================== -->
+    <!-- STYLE LABELS PAR DÉFAUT                                             -->
+    <!-- =================================================================== -->
+    <Style TargetType="Label">
+        <Setter Property="TextColor" Value="{StaticResource ColorTextPrimary}" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+
+    <!-- =================================================================== -->
+    <!-- STYLE SEARCHBAR PAR DÉFAUT                                          -->
+    <!-- =================================================================== -->
+    <Style TargetType="SearchBar">
+        <Setter Property="TextColor" Value="{StaticResource ColorTextPrimary}" />
+        <Setter Property="PlaceholderColor" Value="{StaticResource ColorTextSecondary}" />
+        <Setter Property="CancelButtonColor" Value="{StaticResource ColorPrimaryRed}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="FontFamily" Value="OpenSansRegular" />
+    </Style>
+
+    <!-- =================================================================== -->
+    <!-- STYLE REFRESHVIEW PAR DÉFAUT                                        -->
+    <!-- =================================================================== -->
+    <Style TargetType="RefreshView">
+        <Setter Property="RefreshColor" Value="{StaticResource ColorPrimaryRed}" />
+    </Style>
+
+    <!-- =================================================================== -->
+    <!-- CLASSES DE STYLES SPÉCIFIQUES AUTOMASTERS (F18, F27)                 -->
+    <!-- =================================================================== -->
+
+    <!-- Conteneur Carte Surface -->
+    <Style x:Key="CardSurfaceStyle" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorSurfaceCard}" />
+        <Setter Property="Stroke" Value="{StaticResource ColorBorder}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="14" />
+    </Style>
+
+    <!-- Conteneur Champ de Saisie (Entry Wrapper) -->
+    <Style x:Key="InputContainerStyle" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorSurfaceInput}" />
+        <Setter Property="Stroke" Value="{StaticResource ColorBorder}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 10" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="14,2" />
+        <Setter Property="HeightRequest" Value="50" />
+    </Style>
+
+    <!-- Bouton Principal Rouge (SE CONNECTER, OUVRIR, VALIDER) -->
+    <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorPrimaryRed}" />
+        <Setter Property="TextColor" Value="{StaticResource ColorTextPrimary}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="HeightRequest" Value="52" />
+    </Style>
+
+    <!-- Bouton Secondaire Vert (ACHETER IMMÉDIATEMENT) -->
+    <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorSecondaryGreen}" />
+        <Setter Property="TextColor" Value="{StaticResource ColorTextPrimary}" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="HeightRequest" Value="52" />
+    </Style>
+
+    <!-- Bouton Réserver (Fond bordeaux foncé, bordure rouge) -->
+    <Style x:Key="ReserveButtonStyle" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource ColorReserveDarkRed}" />
+        <Setter Property="TextColor" Value="{StaticResource ColorPrimaryRed}" />
+        <Setter Property="BorderColor" Value="{StaticResource ColorPrimaryRed}" />
+        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="HeightRequest" Value="52" />
+    </Style>
+
+</ResourceDictionary>

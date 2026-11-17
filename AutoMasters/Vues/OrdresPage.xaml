@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AutoMasters.Vues.OrdresPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:AutoMasters.VuesModeles"
+    xmlns:modeles="clr-namespace:AutoMasters.Modeles"
+    x:DataType="vm:OrdresVueModele"
+    BackgroundColor="#10080B"
+    Title="Ordres"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="16,16,16,0">
+
+        <!-- 1. En-tête de la page -->
+        <VerticalStackLayout Grid.Row="0" Spacing="4" Margin="0,0,0,12">
+            <Label
+                Text="MES ORDRES"
+                FontSize="24"
+                FontAttributes="Bold"
+                TextColor="#FFFFFF"
+                CharacterSpacing="1" />
+            <Label
+                Text="Gestion de vos ventes actives et réservations temporaires"
+                FontSize="12"
+                TextColor="#9CA3AF" />
+        </VerticalStackLayout>
+
+        <!-- 2. Sélecteur Segmenté (Onglets internes Mes Ventes / Réservations) -->
+        <Border
+            Grid.Row="1"
+            Stroke="#331A20"
+            StrokeThickness="1"
+            BackgroundColor="#1E1014"
+            StrokeShape="RoundRectangle 10"
+            Padding="4"
+            Margin="0,0,0,12">
+            <Grid ColumnDefinitions="*,*">
+                <Button
+                    Grid.Column="0"
+                    Text="Mes Ventes"
+                    HeightRequest="38"
+                    CornerRadius="8"
+                    FontSize="12"
+                    FontAttributes="Bold"
+                    BackgroundColor="#221215"
+                    TextColor="#A0A0A0"
+                    Command="{Binding ChangerOngletCommand}"
+                    CommandParameter="0">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding AfficherMesVentes}" Value="True">
+                            <Setter Property="BackgroundColor" Value="#E63946" />
+                            <Setter Property="TextColor" Value="#FFFFFF" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+                <Button
+                    Grid.Column="1"
+                    Text="Réservations"
+                    HeightRequest="38"
+                    CornerRadius="8"
+                    FontSize="12"
+                    FontAttributes="Bold"
+                    BackgroundColor="#221215"
+                    TextColor="#A0A0A0"
+                    Command="{Binding ChangerOngletCommand}"
+                    CommandParameter="1">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding AfficherMesReservations}" Value="True">
+                            <Setter Property="BackgroundColor" Value="#E63946" />
+                            <Setter Property="TextColor" Value="#FFFFFF" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- 3. Conteneur dynamique des listes avec Tirer pour actualiser -->
+        <RefreshView
+            Grid.Row="2"
+            IsRefreshing="{Binding EstOccupe}"
+            Command="{Binding ChargerDonneesCommand}"
+            RefreshColor="#E63946">
+
+            <Grid>
+                <!-- Indicateur de chargement central -->
+                <ActivityIndicator
+                    Color="#E63946"
+                    IsRunning="{Binding EstOccupe}"
+                    IsVisible="{Binding EstOccupe}"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    WidthRequest="48"
+                    HeightRequest="48" />
+
+                <!-- Vue 1: Mes Ventes actives -->
+                <CollectionView
+                    ItemsSource="{Binding MesVentes}"
+                    IsVisible="{Binding AfficherMesVentes}"
+                    SelectionMode="None">
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout
+                            Padding="32"
+                            Spacing="12"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center">
+                            <Label Text="📋" FontSize="48" HorizontalTextAlignment="Center" />
+                            <Label
+                                Text="Aucune vente active"
+                                FontSize="18"
+                                FontAttributes="Bold"
+                                TextColor="#FFFFFF"
+                                HorizontalTextAlignment="Center" />
+                            <Label
+                                Text="Vous n'avez actuellement aucun véhicule mis en vente sur la place de marché."
+                                FontSize="13"
+                                TextColor="#9CA3AF"
+                                HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="modeles:Offre">
+                            <Border
+                                Stroke="#331A20"
+                                StrokeThickness="1"
+                                BackgroundColor="#1E1014"
+                                StrokeShape="RoundRectangle 12"
+                                Padding="12"
+                                Margin="0,0,0,10">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:OrdresVueModele}}, Path=VoirDetailsCarteCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="76,*,Auto" ColumnSpacing="12">
+                                    <Border
+                                        Grid.Column="0"
+                                        StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 8"
+                                        HeightRequest="56"
+                                        BackgroundColor="#201518">
+                                        <Image Source="{Binding Carte.ImageUrl}" Aspect="AspectFill" />
+                                    </Border>
+
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                        <Label
+                                            Text="{Binding Carte.NomComplet}"
+                                            FontAttributes="Bold"
+                                            TextColor="#FFFFFF"
+                                            FontSize="14"
+                                            LineBreakMode="TailTruncation" />
+                                        <Label
+                                            Text="{Binding PrixReelFormate, StringFormat='💶 Prix réel : {0}'}"
+                                            TextColor="#E5E7EB"
+                                            FontAttributes="Bold"
+                                            FontSize="11" />
+                                        <Label
+                                            Text="{Binding ValeurJetonsFormatee, StringFormat='🪙 Valeur : {0}'}"
+                                            TextColor="#FBBF24"
+                                            FontAttributes="Bold"
+                                            FontSize="12" />
+                                        <Label
+                                            Text="{Binding Statut, StringFormat='Statut : {0}'}"
+                                            TextColor="#10B981"
+                                            FontSize="11" />
+                                    </VerticalStackLayout>
+
+                                    <Border
+                                        Grid.Column="2"
+                                        StrokeThickness="1"
+                                        Stroke="#331A20"
+                                        BackgroundColor="#221215"
+                                        StrokeShape="RoundRectangle 6"
+                                        Padding="10,6"
+                                        VerticalOptions="Center">
+                                        <Label
+                                            Text="EN VENTE"
+                                            FontSize="10"
+                                            FontAttributes="Bold"
+                                            TextColor="#38BDF8" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Vue 2: Mes Réservations temporaires -->
+                <CollectionView
+                    ItemsSource="{Binding MesReservations}"
+                    IsVisible="{Binding AfficherMesReservations}"
+                    SelectionMode="None">
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout
+                            Padding="32"
+                            Spacing="12"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center">
+                            <Label Text="⏱️" FontSize="48" HorizontalTextAlignment="Center" />
+                            <Label
+                                Text="Aucune réservation active"
+                                FontSize="18"
+                                FontAttributes="Bold"
+                                TextColor="#FFFFFF"
+                                HorizontalTextAlignment="Center" />
+                            <Label
+                                Text="Vous n'avez actuellement aucune offre réservée sur le marché."
+                                FontSize="13"
+                                TextColor="#9CA3AF"
+                                HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="modeles:Offre">
+                            <Border
+                                Stroke="#442228"
+                                StrokeThickness="1"
+                                BackgroundColor="#1E1014"
+                                StrokeShape="RoundRectangle 12"
+                                Padding="12"
+                                Margin="0,0,0,10">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:OrdresVueModele}}, Path=VoirDetailsCarteCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="76,*,Auto" ColumnSpacing="12">
+                                    <Border
+                                        Grid.Column="0"
+                                        StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 8"
+                                        HeightRequest="56"
+                                        BackgroundColor="#201518">
+                                        <Image Source="{Binding Carte.ImageUrl}" Aspect="AspectFill" />
+                                    </Border>
+
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                        <Label
+                                            Text="{Binding Carte.NomComplet}"
+                                            FontAttributes="Bold"
+                                            TextColor="#FFFFFF"
+                                            FontSize="14"
+                                            LineBreakMode="TailTruncation" />
+                                        <Label
+                                            Text="{Binding PrixReelFormate, StringFormat='💶 Prix réel : {0}'}"
+                                            TextColor="#E5E7EB"
+                                            FontAttributes="Bold"
+                                            FontSize="11" />
+                                        <Label
+                                            Text="{Binding ValeurJetonsFormatee, StringFormat='🪙 Valeur : {0}'}"
+                                            TextColor="#FBBF24"
+                                            FontAttributes="Bold"
+                                            FontSize="12" />
+                                        <Label
+                                            Text="Réservation active (15 min)"
+                                            TextColor="#F59E0B"
+                                            FontSize="11" />
+                                    </VerticalStackLayout>
+
+                                    <Border
+                                        Grid.Column="2"
+                                        StrokeThickness="1"
+                                        Stroke="#F59E0B"
+                                        BackgroundColor="#2A1E0D"
+                                        StrokeShape="RoundRectangle 6"
+                                        Padding="10,6"
+                                        VerticalOptions="Center">
+                                        <Label
+                                            Text="RÉSERVÉ"
+                                            FontSize="10"
+                                            FontAttributes="Bold"
+                                            TextColor="#F59E0B" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+            </Grid>
+        </RefreshView>
+
+        <!-- 4. Barre de pagination (14 ordres par page, affichée uniquement s'il y a au moins 2 pages) -->
+        <Border
+            Grid.Row="3"
+            IsVisible="{Binding AfficherPagination}"
+            Stroke="#331A20"
+            StrokeThickness="1"
+            BackgroundColor="#180D11"
+            StrokeShape="RoundRectangle 12"
+            Padding="10,6"
+            Margin="0,8,0,10">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" VerticalOptions="Center">
+                <Button
+                    Grid.Column="0"
+                    Text="◀ Précédent"
+                    Command="{Binding PagePrecedenteCommand}"
+                    IsEnabled="{Binding PeutAllerPagePrecedente}"
+                    BackgroundColor="#241317"
+                    TextColor="#FFFFFF"
+                    BorderColor="#3D1E25"
+                    BorderWidth="1"
+                    CornerRadius="8"
+                    HeightRequest="36"
+                    Padding="12,0"
+                    FontSize="12"
+                    FontAttributes="Bold" />
+
+                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+                    <HorizontalStackLayout Spacing="6" HorizontalOptions="Center" VerticalOptions="Center">
+                        <Label
+                            Text="Page"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            TextColor="#D1D5DB"
+                            VerticalOptions="Center" />
+                        <Border
+                            Stroke="#E63946"
+                            StrokeThickness="1"
+                            BackgroundColor="#241317"
+                            StrokeShape="RoundRectangle 6"
+                            Padding="4,0"
+                            HeightRequest="28"
+                            WidthRequest="46"
+                            VerticalOptions="Center">
+                            <Entry
+                                Text="{Binding SaisiePage}"
+                                Keyboard="Numeric"
+                                ReturnCommand="{Binding AllerAPageCommand}"
+                                FontSize="12"
+                                FontAttributes="Bold"
+                                TextColor="#FFFFFF"
+                                BackgroundColor="Transparent"
+                                HorizontalTextAlignment="Center"
+                                VerticalTextAlignment="Center"
+                                Margin="0,-4" />
+                        </Border>
+                        <Label
+                            Text="{Binding NombreTotalPages, StringFormat='/ {0}'}"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            TextColor="#FFFFFF"
+                            VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <Label
+                        Text="14 voitures par page"
+                        FontSize="10"
+                        TextColor="#9CA3AF"
+                        HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+
+                <Button
+                    Grid.Column="2"
+                    Text="Suivant ▶"
+                    Command="{Binding PageSuivanteCommand}"
+                    IsEnabled="{Binding PeutAllerPageSuivante}"
+                    BackgroundColor="#E63946"
+                    TextColor="#FFFFFF"
+                    CornerRadius="8"
+                    HeightRequest="36"
+                    Padding="14,0"
+                    FontSize="12"
+                    FontAttributes="Bold" />
+            </Grid>
+        </Border>
+
+    </Grid>
+
+</ContentPage>

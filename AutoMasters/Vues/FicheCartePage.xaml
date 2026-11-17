@@ -1,0 +1,578 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AutoMasters.Vues.FicheCartePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:AutoMasters.VuesModeles"
+    xmlns:modeles="clr-namespace:AutoMasters.Modeles"
+    x:DataType="vm:FicheCarteVueModele"
+    BackgroundColor="#10080B"
+    Title="{Binding TitrePage}"
+    Shell.NavBarIsVisible="False">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="16" Padding="16,16,16,32">
+
+            <!-- 1. Barre de navigation supérieure (Bouton retour) -->
+            <Grid ColumnDefinitions="Auto,*,Auto" VerticalOptions="Center">
+                <Button
+                    Grid.Column="0"
+                    Text="◀ Retour"
+                    Command="{Binding RetourCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="#E63946"
+                    FontSize="14"
+                    FontAttributes="Bold"
+                    Padding="0"
+                    HeightRequest="36" />
+
+                <Label
+                    Grid.Column="1"
+                    Text="FICHE VÉHICULE"
+                    TextColor="#FFFFFF"
+                    FontSize="13"
+                    FontAttributes="Bold"
+                    CharacterSpacing="1"
+                    HorizontalTextAlignment="Center"
+                    VerticalTextAlignment="Center" />
+            </Grid>
+
+            <!-- Indicateur de chargement si requête réseau en cours -->
+            <ActivityIndicator
+                Color="#E63946"
+                IsRunning="{Binding EstOccupe}"
+                IsVisible="{Binding EstOccupe}"
+                HorizontalOptions="Center" />
+
+            <!-- Bannière d'erreur éventuelle -->
+            <Border
+                IsVisible="{Binding AErreur}"
+                Stroke="#EF4444"
+                StrokeShape="RoundRectangle 10"
+                BackgroundColor="#2A1215"
+                Padding="12"
+                Margin="0,0,0,8">
+                <VerticalStackLayout Spacing="6">
+                    <Label
+                        Text="{Binding MessageErreur}"
+                        TextColor="#EF4444"
+                        FontSize="13" />
+                    <Button
+                        Text="RÉESSAYER"
+                        Command="{Binding ChargerDetailsCommand}"
+                        BackgroundColor="#EF4444"
+                        TextColor="#FFFFFF"
+                        HeightRequest="36"
+                        CornerRadius="6" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- 2. Affichage de la carte complète (taille équilibrée, voiture visible en entier) -->
+            <Border
+                Stroke="#331A20"
+                StrokeThickness="2"
+                StrokeShape="RoundRectangle 18"
+                BackgroundColor="#180E12"
+                MaximumWidthRequest="340"
+                HorizontalOptions="Center"
+                Padding="10">
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="LÉGENDAIRE">
+                        <Setter Property="Stroke" Value="#F59E0B" />
+                        <Setter Property="BackgroundColor" Value="#24180B" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="ÉPIQUE">
+                        <Setter Property="Stroke" Value="#A855F7" />
+                        <Setter Property="BackgroundColor" Value="#20112E" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="RARE">
+                        <Setter Property="Stroke" Value="#38BDF8" />
+                        <Setter Property="BackgroundColor" Value="#0D1F33" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="COMMUNE">
+                        <Setter Property="Stroke" Value="#9CA3AF" />
+                        <Setter Property="BackgroundColor" Value="#181A1F" />
+                    </DataTrigger>
+                </Border.Triggers>
+
+                <VerticalStackLayout Spacing="10">
+                    <!-- En-tête de la carte : Tirage et Rareté -->
+                    <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                        <Border
+                            Grid.Column="0"
+                            Stroke="#331A20"
+                            StrokeShape="RoundRectangle 6"
+                            BackgroundColor="#CC10080B"
+                            Padding="8,3"
+                            HorizontalOptions="Start">
+                            <Label
+                                Text="{Binding ExemplairesEnCirculationFormate}"
+                                FontSize="10"
+                                FontAttributes="Bold"
+                                TextColor="#D1D5DB" />
+                        </Border>
+
+                        <Border
+                            Grid.Column="1"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 6"
+                            Padding="8,3"
+                            HorizontalOptions="End">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="LÉGENDAIRE">
+                                    <Setter Property="Stroke" Value="#F59E0B" />
+                                    <Setter Property="BackgroundColor" Value="#E62A1E0D" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="ÉPIQUE">
+                                    <Setter Property="Stroke" Value="#A855F7" />
+                                    <Setter Property="BackgroundColor" Value="#E6251433" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="RARE">
+                                    <Setter Property="Stroke" Value="#38BDF8" />
+                                    <Setter Property="BackgroundColor" Value="#E60E2338" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="COMMUNE">
+                                    <Setter Property="Stroke" Value="#9CA3AF" />
+                                    <Setter Property="BackgroundColor" Value="#E61E2024" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label
+                                Text="{Binding Rarete, StringFormat='★ {0}'}"
+                                FontSize="10"
+                                FontAttributes="Bold"
+                                TextColor="#FFFFFF" />
+                        </Border>
+                    </Grid>
+
+                    <!-- Cadre photo avec AspectFit pour voir la voiture en entier sans la couper -->
+                    <Border
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 12"
+                        BackgroundColor="#10080B"
+                        Padding="4">
+                        <Grid HeightRequest="195">
+                            <Image
+                                Source="{Binding ImageUrl}"
+                                Aspect="AspectFit"
+                                HorizontalOptions="Fill"
+                                VerticalOptions="Fill" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Bandeau d'identité intégré en bas de la carte -->
+                    <VerticalStackLayout Spacing="2" Padding="4,0,4,4">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label
+                                Grid.Column="0"
+                                Text="{Binding Marque}"
+                                FontSize="22"
+                                FontAttributes="Bold"
+                                TextColor="#FFFFFF" />
+                            <Label
+                                Grid.Column="1"
+                                Text="{Binding Annee, StringFormat='Année {0}'}"
+                                FontSize="12"
+                                TextColor="#9CA3AF"
+                                VerticalOptions="Center" />
+                        </Grid>
+
+                        <Label
+                            Text="{Binding ModeleComplet}"
+                            FontSize="15"
+                            TextColor="#E63946"
+                            FontAttributes="Bold" />
+
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                            <Label
+                                Grid.Column="0"
+                                Text="{Binding PrixReelFormate, StringFormat='💶 {0}'}"
+                                FontSize="13"
+                                FontAttributes="Bold"
+                                TextColor="#E5E7EB" />
+                            <Label
+                                Grid.Column="1"
+                                Text="{Binding ValeurJetonsFormatee, StringFormat='🪙 {0}'}"
+                                FontSize="13"
+                                FontAttributes="Bold"
+                                TextColor="#FBBF24" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- 4. Grille de spécifications techniques saillante (2x2) -->
+            <Label
+                Text="SPÉCIFICATIONS TECHNIQUES"
+                FontSize="12"
+                FontAttributes="Bold"
+                TextColor="#E63946"
+                CharacterSpacing="1"
+                Margin="0,8,0,0" />
+
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                <!-- Tuile 1 : Vitesse maximale -->
+                <Border
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Stroke="#331A20"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 12"
+                    BackgroundColor="#1E1014"
+                    Padding="14,12">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="🏎️" FontSize="20" />
+                        <Label
+                            Text="VITESSE MAX"
+                            FontSize="10"
+                            FontAttributes="Bold"
+                            TextColor="#9CA3AF"
+                            CharacterSpacing="1" />
+                        <Label
+                            Text="{Binding VitesseMaxFormatee}"
+                            FontSize="18"
+                            FontAttributes="Bold"
+                            TextColor="#FFFFFF" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Tuile 2 : 0 à 100 km/h -->
+                <Border
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Stroke="#331A20"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 12"
+                    BackgroundColor="#1E1014"
+                    Padding="14,12">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="⏱️" FontSize="20" />
+                        <Label
+                            Text="0 À 100 KM/H"
+                            FontSize="10"
+                            FontAttributes="Bold"
+                            TextColor="#9CA3AF"
+                            CharacterSpacing="1" />
+                        <Label
+                            Text="{Binding ZeroACentFormate}"
+                            FontSize="18"
+                            FontAttributes="Bold"
+                            TextColor="#FFFFFF" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Tuile 3 : Puissance en chevaux -->
+                <Border
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    Stroke="#331A20"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 12"
+                    BackgroundColor="#1E1014"
+                    Padding="14,12">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="⚡" FontSize="20" />
+                        <Label
+                            Text="PUISSANCE"
+                            FontSize="10"
+                            FontAttributes="Bold"
+                            TextColor="#9CA3AF"
+                            CharacterSpacing="1" />
+                        <Label
+                            Text="{Binding PuissanceFormatee}"
+                            FontSize="18"
+                            FontAttributes="Bold"
+                            TextColor="#FFFFFF" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Tuile 4 : Année de construction -->
+                <Border
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Stroke="#331A20"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 12"
+                    BackgroundColor="#1E1014"
+                    Padding="14,12">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="📅" FontSize="20" />
+                        <Label
+                            Text="ANNÉE"
+                            FontSize="10"
+                            FontAttributes="Bold"
+                            TextColor="#9CA3AF"
+                            CharacterSpacing="1" />
+                        <Label
+                            Text="{Binding Annee}"
+                            FontSize="18"
+                            FontAttributes="Bold"
+                            TextColor="#FFFFFF" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <!-- 5. Bloc de cotation officielle et valeur en Jetons (RM001) -->
+            <Border
+                Stroke="#331A20"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 14"
+                BackgroundColor="#1E1014"
+                Padding="16"
+                Margin="0,4,0,0">
+                <VerticalStackLayout Spacing="10">
+                    <Label
+                        Text="PRIX RÉEL VÉHICULE &amp; VALEUR EN JETONS (1 JETON = 1 000 €)"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        TextColor="#9CA3AF"
+                        CharacterSpacing="1" />
+
+                     <!-- Grid Prix & Jetons -->
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Border
+                            Grid.Column="0"
+                            Stroke="#374151"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 10"
+                            BackgroundColor="#150B0E"
+                            Padding="12,10">
+                            <VerticalStackLayout Spacing="4">
+                                <Label
+                                    Text="💶 COURS OFFICIEL API"
+                                    FontSize="10"
+                                    FontAttributes="Bold"
+                                    TextColor="#9CA3AF" />
+                                <Label
+                                    Text="{Binding PrixReelFormate}"
+                                    FontSize="19"
+                                    FontAttributes="Bold"
+                                    TextColor="#FFFFFF" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Border
+                            Grid.Column="1"
+                            Stroke="#D97706"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 10"
+                            BackgroundColor="#24180B"
+                            Padding="12,10">
+                            <VerticalStackLayout Spacing="4">
+                                <Label
+                                    Text="🪙 VALEUR APPLICATION"
+                                    FontSize="10"
+                                    FontAttributes="Bold"
+                                    TextColor="#FBBF24" />
+                                <Label
+                                    Text="{Binding ValeurJetonsFormatee}"
+                                    FontSize="19"
+                                    FontAttributes="Bold"
+                                    TextColor="#FBBF24" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
+
+                    <!-- Courbe d'évolution du Marché en Direct (GET /cards/{id}/quotes · RM001) -->
+                    <Border
+                        Stroke="#2A1E24"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 12"
+                        BackgroundColor="#140A0D"
+                        Padding="12"
+                        Margin="0,4,0,0">
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                                <VerticalStackLayout Grid.Column="0" Spacing="1">
+                                    <Label
+                                        Text="📈 COURBE DU MARCHÉ EN DIRECT"
+                                        FontSize="11"
+                                        FontAttributes="Bold"
+                                        TextColor="#FFFFFF" />
+                                    <Label
+                                        Text="{Binding HorodatageCoursFormate}"
+                                        FontSize="10"
+                                        TextColor="#9CA3AF" />
+                                </VerticalStackLayout>
+
+                                <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                    <Border
+                                        Stroke="#10B981"
+                                        StrokeThickness="1"
+                                        BackgroundColor="#1E1014"
+                                        StrokeShape="RoundRectangle 6"
+                                        Padding="8,3">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding EstVariationPositive}" Value="False">
+                                                <Setter Property="Stroke" Value="#EF4444" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Label
+                                            Text="{Binding VariationCoursFormatee}"
+                                            FontSize="11"
+                                            FontAttributes="Bold"
+                                            TextColor="#10B981">
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding EstVariationPositive}" Value="False">
+                                                    <Setter Property="TextColor" Value="#EF4444" />
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+                                    </Border>
+                                    <Button
+                                        Text="🔄"
+                                        Command="{Binding ChargerHistoriqueCoursCommand}"
+                                        BackgroundColor="#241317"
+                                        TextColor="#FFFFFF"
+                                        CornerRadius="6"
+                                        WidthRequest="30"
+                                        HeightRequest="28"
+                                        Padding="0"
+                                        FontSize="12" />
+                                </HorizontalStackLayout>
+                            </Grid>
+
+                            <!-- Barres et points de cotation des 8 derniers cours de l'API en pur XAML -->
+                            <Grid HeightRequest="105" Margin="0,4,0,2">
+                                <!-- Lignes de repère horizontales -->
+                                <VerticalStackLayout Spacing="26" VerticalOptions="Center" Opacity="0.25">
+                                    <BoxView HeightRequest="1" Color="#4B5563" />
+                                    <BoxView HeightRequest="1" Color="#4B5563" />
+                                    <BoxView HeightRequest="1" Color="#4B5563" />
+                                </VerticalStackLayout>
+
+                                <!-- Barres et horaires des 8 dernières cotations de GET /cards/{id}/quotes -->
+                                <HorizontalStackLayout
+                                    BindableLayout.ItemsSource="{Binding HistoriqueCours}"
+                                    Spacing="10"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="End">
+                                    <BindableLayout.ItemTemplate>
+                                        <DataTemplate x:DataType="modeles:PointCotationMarche">
+                                            <VerticalStackLayout Spacing="2" VerticalOptions="End" WidthRequest="30">
+                                                <!-- Point sommet de la courbe -->
+                                                <Border
+                                                    StrokeThickness="0"
+                                                    BackgroundColor="#10B981"
+                                                    StrokeShape="RoundRectangle 4"
+                                                    WidthRequest="8"
+                                                    HeightRequest="8"
+                                                    HorizontalOptions="Center">
+                                                    <Border.Triggers>
+                                                        <DataTrigger TargetType="Border" Binding="{Binding EstEnHausse}" Value="False">
+                                                            <Setter Property="BackgroundColor" Value="#E63946" />
+                                                        </DataTrigger>
+                                                    </Border.Triggers>
+                                                </Border>
+                                                <!-- Barre proportionnelle au cours -->
+                                                <Border
+                                                    StrokeThickness="0"
+                                                    BackgroundColor="#10B981"
+                                                    Opacity="0.65"
+                                                    StrokeShape="RoundRectangle 4,4,0,0"
+                                                    WidthRequest="14"
+                                                    HeightRequest="{Binding HauteurBarre}"
+                                                    HorizontalOptions="Center"
+                                                    VerticalOptions="End">
+                                                    <Border.Triggers>
+                                                        <DataTrigger TargetType="Border" Binding="{Binding EstEnHausse}" Value="False">
+                                                            <Setter Property="BackgroundColor" Value="#E63946" />
+                                                        </DataTrigger>
+                                                    </Border.Triggers>
+                                                </Border>
+                                                <Label
+                                                    Text="{Binding HeureCourte}"
+                                                    FontSize="7"
+                                                    TextColor="#9CA3AF"
+                                                    HorizontalTextAlignment="Center"
+                                                    LineBreakMode="NoWrap" />
+                                            </VerticalStackLayout>
+                                        </DataTemplate>
+                                    </BindableLayout.ItemTemplate>
+                                </HorizontalStackLayout>
+                            </Grid>
+
+                            <!-- Plus bas et Plus haut sur la période -->
+                            <Grid ColumnDefinitions="*,*" Margin="0,2,0,0">
+                                <Label
+                                    Grid.Column="0"
+                                    Text="{Binding CoursMinFormate, StringFormat='Plus bas récent : {0}'}"
+                                    FontSize="10"
+                                    TextColor="#9CA3AF" />
+                                <Label
+                                    Grid.Column="1"
+                                    Text="{Binding CoursMaxFormate, StringFormat='Plus haut récent : {0}'}"
+                                    FontSize="10"
+                                    TextColor="#9CA3AF"
+                                    HorizontalTextAlignment="End" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Label
+                        Text="Le serveur API Groupe 2 est l'unique source du cours officiel (RM001) : le prix fluctue en direct selon le marché et vaut proportionnellement Prix / 1 000 en Jetons."
+                        FontSize="12"
+                        TextColor="#6B7280" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- 6. Description & Historique -->
+            <Border
+                Stroke="#331A20"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 14"
+                BackgroundColor="#1E1014"
+                Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label
+                        Text="DESCRIPTION &amp; HISTORIQUE"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        TextColor="#E63946"
+                        CharacterSpacing="1" />
+
+                    <Label
+                        Text="{Binding Description}"
+                        FontSize="13"
+                        TextColor="#D1D5DB"
+                        LineHeight="1.4" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- 7. Boutons d'action -->
+            <VerticalStackLayout Spacing="10" Margin="0,8,0,0">
+                <Button
+                    Text="🎁 OFFRIR CETTE VOITURE EN CADEAU (RM009)"
+                    Command="{Binding OffrirCarteCommand}"
+                    IsVisible="{Binding EstPossedeeDansGarage}"
+                    BackgroundColor="#831843"
+                    TextColor="#F472B6"
+                    FontAttributes="Bold"
+                    FontSize="14"
+                    CornerRadius="10"
+                    HeightRequest="50" />
+
+                <Button
+                    Text="VOIR LES OFFRES SUR LE MARCHÉ"
+                    Command="{Binding VoirOffresMarcheCommand}"
+                    BackgroundColor="#E63946"
+                    TextColor="#FFFFFF"
+                    FontAttributes="Bold"
+                    FontSize="14"
+                    CornerRadius="10"
+                    HeightRequest="50" />
+
+                <Button
+                    Text="RETOUR AU CATALOGUE"
+                    Command="{Binding RetourCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="#9CA3AF"
+                    BorderColor="#331A20"
+                    BorderWidth="1"
+                    FontSize="13"
+                    CornerRadius="10"
+                    HeightRequest="44" />
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

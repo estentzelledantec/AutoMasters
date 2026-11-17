@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:AutoMasters.VuesModeles"
+    xmlns:m="clr-namespace:AutoMasters.Modeles"
+    x:Class="AutoMasters.Vues.CreationOffrePage"
+    x:DataType="vm:CreationOffreVueModele"
+    BackgroundColor="#10080B"
+    Title="Vendre un véhicule"
+    Shell.NavBarIsVisible="False">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20,24" Spacing="20">
+            
+            <!-- En-tête -->
+            <Grid ColumnDefinitions="*,Auto">
+                <VerticalStackLayout Grid.Column="0" Spacing="2">
+                    <Label
+                        Text="VENDRE UNE CARTE"
+                        FontSize="22"
+                        FontAttributes="Bold"
+                        TextColor="#FFFFFF" />
+                    <Label
+                        Text="Fixez votre prix et mettez un véhicule sur le marché"
+                        FontSize="13"
+                        TextColor="#9CA3AF" />
+                </VerticalStackLayout>
+                <Button
+                    Grid.Column="1"
+                    Text="✕"
+                    FontSize="18"
+                    TextColor="#FFFFFF"
+                    BackgroundColor="#221215"
+                    CornerRadius="16"
+                    WidthRequest="36"
+                    HeightRequest="36"
+                    Padding="0"
+                    Command="{Binding AnnulerCommand}" />
+            </Grid>
+
+            <!-- Étape 1 : Sélection du véhicule -->
+            <VerticalStackLayout Spacing="8">
+                <Label
+                    Text="1. CHOISIR UN VÉHICULE DU GARAGE"
+                    FontSize="11"
+                    FontAttributes="Bold"
+                    TextColor="#E63946"
+                    CharacterSpacing="1" />
+
+                <CollectionView
+                    ItemsSource="{Binding CartesPossedees}"
+                    SelectedItem="{Binding CarteSelectionnee, Mode=TwoWay}"
+                    SelectionMode="Single"
+                    HeightRequest="220">
+                    <CollectionView.EmptyView>
+                        <Label
+                            Text="Aucun véhicule disponible à la vente dans votre garage."
+                            TextColor="#888888"
+                            FontSize="13"
+                            Margin="0,16" />
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="m:CartePossedee">
+                            <Border
+                                Stroke="#2A1E24"
+                                StrokeThickness="1"
+                                BackgroundColor="#1A1A1E"
+                                StrokeShape="RoundRectangle 10"
+                                Padding="10"
+                                Margin="0,0,0,8">
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup Name="CommonStates">
+                                        <VisualState Name="Normal" />
+                                        <VisualState Name="Selected">
+                                            <VisualState.Setters>
+                                                <Setter Property="Stroke" Value="#E63946" />
+                                                <Setter Property="BackgroundColor" Value="#2B1518" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+
+                                <Grid ColumnDefinitions="60,*" ColumnSpacing="12">
+                                    <Border
+                                        Grid.Column="0"
+                                        StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 6"
+                                        HeightRequest="48"
+                                        WidthRequest="60"
+                                        BackgroundColor="#242426">
+                                        <Image Source="{Binding Carte.ImageUrl}" Aspect="AspectFill" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                        <Label Text="{Binding Carte.Marque}" FontAttributes="Bold" TextColor="#FFFFFF" FontSize="14" />
+                                        <Label Text="{Binding Carte.Modele}" TextColor="#9CA3AF" FontSize="12" />
+                                        <HorizontalStackLayout Spacing="6">
+                                            <Label Text="{Binding ValeurJetonsFormatee, StringFormat='🪙 {0}'}" TextColor="#FBBF24" FontAttributes="Bold" FontSize="11" />
+                                            <Label Text="{Binding ValeurActuelleFormatee, StringFormat='({0})'}" TextColor="#D1D5DB" FontSize="11" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+
+            <!-- Étape 2 : Saisie du Prix -->
+            <VerticalStackLayout Spacing="8">
+                <Label
+                    Text="2. PRIX DE VENTE SOUHAITÉ (JETONS OU €)"
+                    FontSize="11"
+                    FontAttributes="Bold"
+                    TextColor="#E63946"
+                    CharacterSpacing="1" />
+
+                <Border
+                    Stroke="#331A20"
+                    StrokeThickness="1"
+                    BackgroundColor="#1E1014"
+                    StrokeShape="RoundRectangle 10"
+                    Padding="14,4">
+                    <Entry
+                        Placeholder="Exemple : 35 (Jetons) ou 35000 (€)"
+                        PlaceholderColor="#888888"
+                        TextColor="#FFFFFF"
+                        Keyboard="Numeric"
+                        FontSize="16"
+                        Text="{Binding PrixSaisi}" />
+                </Border>
+                <Label
+                    Text="1 Jeton = 1 000 € de valeur réelle (ex: 35 Jetons pour une voiture à 35 000 €)."
+                    FontSize="11"
+                    TextColor="#6B7280" />
+            </VerticalStackLayout>
+
+            <!-- Message d'erreur -->
+            <Label
+                Text="{Binding MessageErreur}"
+                TextColor="#EF4444"
+                FontSize="13"
+                HorizontalTextAlignment="Center" />
+
+            <!-- Boutons d'Action -->
+            <VerticalStackLayout Spacing="10" Margin="0,12,0,0">
+                <Button
+                    Text="PUBLIER SUR LE MARCHÉ"
+                    FontAttributes="Bold"
+                    FontSize="14"
+                    TextColor="#FFFFFF"
+                    BackgroundColor="#E63946"
+                    HeightRequest="48"
+                    CornerRadius="10"
+                    IsEnabled="{Binding EstDisponible}"
+                    Command="{Binding CreerOffreCommand}" />
+
+                <Button
+                    Text="ANNULER"
+                    FontSize="13"
+                    TextColor="#9CA3AF"
+                    BackgroundColor="Transparent"
+                    BorderColor="#331A20"
+                    BorderWidth="1"
+                    HeightRequest="44"
+                    CornerRadius="10"
+                    Command="{Binding AnnulerCommand}" />
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

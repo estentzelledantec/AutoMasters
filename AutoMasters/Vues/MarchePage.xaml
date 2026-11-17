@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:AutoMasters.VuesModeles"
+    xmlns:m="clr-namespace:AutoMasters.Modeles"
+    x:Class="AutoMasters.Vues.MarchePage"
+    x:DataType="vm:MarcheVueModele"
+    BackgroundColor="#10080B"
+    Title="Marché"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="16,12,16,0">
+        
+        <!-- En-tête : Titre, Solde Portefeuille en Jetons & Badge '🟢 EN DIRECT' (Figma Screen 4) -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                <Label
+                    Text="MARCHÉ"
+                    FontSize="24"
+                    FontAttributes="Bold"
+                    TextColor="#FFFFFF" />
+                <Label
+                    Text="{Binding LibelleOffresActives}"
+                    FontSize="13"
+                    TextColor="#9CA3AF" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Grid.Column="1" Spacing="4" HorizontalOptions="End" VerticalOptions="Center">
+                <!-- Badge Solde Portefeuille Liquide en Jetons -->
+                <Border
+                    Stroke="#D97706"
+                    StrokeThickness="1"
+                    BackgroundColor="#24180B"
+                    StrokeShape="RoundRectangle 10"
+                    Padding="10,4"
+                    HorizontalOptions="End">
+                    <HorizontalStackLayout Spacing="4" VerticalOptions="Center">
+                        <Label Text="💰" FontSize="11" VerticalOptions="Center" />
+                        <Label
+                            Text="{Binding SoldeCompletFormate}"
+                            FontSize="11"
+                            FontAttributes="Bold"
+                            TextColor="#FBBF24"
+                            VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </Border>
+
+                <!-- Badge '🟢 EN DIRECT' -->
+                <Border
+                    Stroke="#10B981"
+                    StrokeThickness="1"
+                    BackgroundColor="#122B1E"
+                    StrokeShape="RoundRectangle 12"
+                    Padding="10,3"
+                    HorizontalOptions="End">
+                    <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                        <Label Text="🟢" FontSize="10" VerticalOptions="Center" />
+                        <Label
+                            Text="EN DIRECT"
+                            FontSize="10"
+                            FontAttributes="Bold"
+                            TextColor="#10B981"
+                            VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </Grid>
+
+        <!-- Barre de recherche & Filtres de Rareté -->
+        <VerticalStackLayout Grid.Row="1" Spacing="10" Margin="0,0,0,12">
+            <!-- Champ de recherche textuelle -->
+            <Border
+                Stroke="#331A20"
+                StrokeThickness="1"
+                BackgroundColor="#1E1014"
+                StrokeShape="RoundRectangle 10"
+                Padding="12,0">
+                <SearchBar
+                    Placeholder="Rechercher marque ou modèle..."
+                    PlaceholderColor="#888888"
+                    TextColor="#FFFFFF"
+                    BackgroundColor="Transparent"
+                    CancelButtonColor="#E63946"
+                    Text="{Binding TexteRecherche}" />
+            </Border>
+
+            <!-- Chips de filtrage par Rareté -->
+            <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                <HorizontalStackLayout Spacing="8">
+                    <Button
+                        Text="TOUTES"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        HeightRequest="32"
+                        CornerRadius="16"
+                        BackgroundColor="#221215"
+                        TextColor="#FFFFFF"
+                        Command="{Binding DefinirFiltreRareteCommand}"
+                        CommandParameter="TOUTES" />
+                    <Button
+                        Text="COMMUNE"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        HeightRequest="32"
+                        CornerRadius="16"
+                        BackgroundColor="#221215"
+                        TextColor="#9CA3AF"
+                        Command="{Binding DefinirFiltreRareteCommand}"
+                        CommandParameter="COMMUNE" />
+                    <Button
+                        Text="RARE"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        HeightRequest="32"
+                        CornerRadius="16"
+                        BackgroundColor="#221215"
+                        TextColor="#38BDF8"
+                        Command="{Binding DefinirFiltreRareteCommand}"
+                        CommandParameter="RARE" />
+                    <Button
+                        Text="ÉPIQUE"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        HeightRequest="32"
+                        CornerRadius="16"
+                        BackgroundColor="#221215"
+                        TextColor="#A855F7"
+                        Command="{Binding DefinirFiltreRareteCommand}"
+                        CommandParameter="ÉPIQUE" />
+                    <Button
+                        Text="★ LÉGENDAIRE"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        HeightRequest="32"
+                        CornerRadius="16"
+                        BackgroundColor="#221215"
+                        TextColor="#F59E0B"
+                        Command="{Binding DefinirFiltreRareteCommand}"
+                        CommandParameter="LÉGENDAIRE" />
+                </HorizontalStackLayout>
+            </ScrollView>
+        </VerticalStackLayout>
+
+        <!-- Liste des Offres & Bouton Flottant FAB (Grid superposée) -->
+        <Grid Grid.Row="2">
+            <RefreshView
+                IsRefreshing="{Binding EstOccupe}"
+                Command="{Binding ChargerOffresCommand}"
+                RefreshColor="#E63946">
+                <CollectionView
+                    ItemsSource="{Binding OffresFiltrees}"
+                    SelectionMode="None">
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout Spacing="12" HorizontalOptions="Center" VerticalOptions="Center" Padding="32">
+                            <Label Text="🏪" FontSize="48" HorizontalOptions="Center" />
+                            <Label
+                                Text="Aucune offre active"
+                                FontSize="18"
+                                FontAttributes="Bold"
+                                TextColor="#FFFFFF"
+                                HorizontalOptions="Center" />
+                            <Label
+                                Text="Soyez le premier à mettre un véhicule en vente avec le bouton + !"
+                                FontSize="13"
+                                TextColor="#888888"
+                                HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="m:Offre">
+                            <Border
+                                Stroke="#2A1E24"
+                                StrokeThickness="1"
+                                BackgroundColor="#1A1A1E"
+                                StrokeShape="RoundRectangle 14"
+                                Padding="12"
+                                Margin="0,0,0,12">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MarcheVueModele}}, Path=VoirDetailsCarteCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+                                <VerticalStackLayout Spacing="10">
+                                    
+                                    <!-- Ligne 1 : Miniature & Métadonnées -->
+                                    <Grid ColumnDefinitions="84,*" ColumnSpacing="12">
+                                        <!-- Miniature véhicule -->
+                                        <Border
+                                            Grid.Column="0"
+                                            StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 8"
+                                            HeightRequest="64"
+                                            WidthRequest="84"
+                                            BackgroundColor="#242426">
+                                            <Image
+                                                Source="{Binding Carte.ImageUrl}"
+                                                Aspect="AspectFill" />
+                                        </Border>
+
+                                        <!-- Marque, Modèle, Rareté, Prix & Vendeur -->
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <Label
+                                                    Grid.Column="0"
+                                                    Text="{Binding Carte.Marque}"
+                                                    FontSize="16"
+                                                    FontAttributes="Bold"
+                                                    TextColor="#FFFFFF" />
+                                                
+                                                <!-- Badge Rareté en pur XAML -->
+                                                <Border
+                                                    Grid.Column="1"
+                                                    Stroke="#64748B"
+                                                    StrokeThickness="1"
+                                                    BackgroundColor="#1E293B"
+                                                    StrokeShape="RoundRectangle 6"
+                                                    Padding="6,2">
+                                                    <Border.Triggers>
+                                                        <DataTrigger TargetType="Border" Binding="{Binding Carte.Rarete}" Value="LÉGENDAIRE">
+                                                            <Setter Property="Stroke" Value="#F59E0B" />
+                                                            <Setter Property="BackgroundColor" Value="#78350F" />
+                                                        </DataTrigger>
+                                                        <DataTrigger TargetType="Border" Binding="{Binding Carte.Rarete}" Value="ÉPIQUE">
+                                                            <Setter Property="Stroke" Value="#EC4899" />
+                                                            <Setter Property="BackgroundColor" Value="#701A75" />
+                                                        </DataTrigger>
+                                                        <DataTrigger TargetType="Border" Binding="{Binding Carte.Rarete}" Value="RARE">
+                                                            <Setter Property="Stroke" Value="#0284C7" />
+                                                            <Setter Property="BackgroundColor" Value="#0C4A6E" />
+                                                        </DataTrigger>
+                                                    </Border.Triggers>
+                                                    <Label
+                                                        Text="{Binding Carte.Rarete}"
+                                                        FontSize="10"
+                                                        FontAttributes="Bold"
+                                                        TextColor="#9CA3AF">
+                                                        <Label.Triggers>
+                                                            <DataTrigger TargetType="Label" Binding="{Binding Carte.Rarete}" Value="LÉGENDAIRE">
+                                                                <Setter Property="TextColor" Value="#F59E0B" />
+                                                            </DataTrigger>
+                                                            <DataTrigger TargetType="Label" Binding="{Binding Carte.Rarete}" Value="ÉPIQUE">
+                                                                <Setter Property="TextColor" Value="#EC4899" />
+                                                            </DataTrigger>
+                                                            <DataTrigger TargetType="Label" Binding="{Binding Carte.Rarete}" Value="RARE">
+                                                                <Setter Property="TextColor" Value="#0284C7" />
+                                                            </DataTrigger>
+                                                        </Label.Triggers>
+                                                    </Label>
+                                                </Border>
+                                            </Grid>
+
+                                            <!-- Modèle et Année -->
+                                            <Label
+                                                FontSize="13"
+                                                TextColor="#9CA3AF">
+                                                <Label.Text>
+                                                    <MultiBinding StringFormat="{}{0} · {1}">
+                                                        <Binding Path="Carte.Modele" />
+                                                        <Binding Path="Carte.Annee" />
+                                                    </MultiBinding>
+                                                </Label.Text>
+                                            </Label>
+
+                                            <!-- Prix Réel en Euros (€) et Valeur en Jetons en dessous (comme dans le Catalogue) -->
+                                            <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                                                <Label
+                                                    Text="{Binding PrixReelFormate, StringFormat='💶 {0}'}"
+                                                    FontSize="13"
+                                                    FontAttributes="Bold"
+                                                    TextColor="#FFFFFF" />
+                                                <Label
+                                                    Text="{Binding Vendeur, StringFormat='· par {0}'}"
+                                                    FontSize="12"
+                                                    TextColor="#9CA3AF" />
+                                            </HorizontalStackLayout>
+                                            <Label
+                                                Text="{Binding ValeurJetonsFormatee, StringFormat='🪙 {0}'}"
+                                                FontSize="12"
+                                                FontAttributes="Bold"
+                                                TextColor="#FBBF24" />
+                                        </VerticalStackLayout>
+                                    </Grid>
+
+                                    <!-- Ligne 2A : Actions pour les offres des autres joueurs (ACHETER IMMÉDIATEMENT / RÉSERVER) -->
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding EstAchetableParMoi}">
+                                        <Button
+                                            Grid.Column="0"
+                                            Text="ACHETER IMMÉDIATEMENT"
+                                            FontSize="12"
+                                            FontAttributes="Bold"
+                                            BackgroundColor="#10B981"
+                                            TextColor="#FFFFFF"
+                                            HeightRequest="40"
+                                            CornerRadius="8"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MarcheVueModele}}, Path=AcheterOffreCommand}"
+                                            CommandParameter="{Binding .}" />
+                                        
+                                        <Button
+                                            Grid.Column="1"
+                                            Text="RÉSERVER"
+                                            FontSize="12"
+                                            FontAttributes="Bold"
+                                            BackgroundColor="#2D1518"
+                                            BorderColor="#EF4444"
+                                            BorderWidth="1"
+                                            TextColor="#EF4444"
+                                            HeightRequest="40"
+                                            CornerRadius="8"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MarcheVueModele}}, Path=ReserverOffreCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Grid>
+
+                                    <!-- Ligne 2B : Indication lorsque l'annonce appartient au joueur connecté (tant qu'elle n'est pas vendue) -->
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" IsVisible="{Binding EstMonOffre}">
+                                        <Border
+                                            Grid.Column="0"
+                                            Stroke="#3B82F6"
+                                            StrokeThickness="1"
+                                            BackgroundColor="#111C2D"
+                                            StrokeShape="RoundRectangle 8"
+                                            HeightRequest="40"
+                                            Padding="12,0">
+                                            <Label
+                                                Text="🏷 VOTRE CARTE EN VENTE (EN ATTENTE D'ACHETEUR)"
+                                                FontSize="11"
+                                                FontAttributes="Bold"
+                                                TextColor="#60A5FA"
+                                                VerticalOptions="Center"
+                                                HorizontalOptions="Center" />
+                                        </Border>
+                                        <Button
+                                            Grid.Column="1"
+                                            Text="✕ RETIRER"
+                                            FontSize="11"
+                                            FontAttributes="Bold"
+                                            BackgroundColor="#2D1518"
+                                            BorderColor="#EF4444"
+                                            BorderWidth="1"
+                                            TextColor="#EF4444"
+                                            HeightRequest="40"
+                                            Padding="14,0"
+                                            CornerRadius="8"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MarcheVueModele}}, Path=RetirerOffreCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Grid>
+
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </RefreshView>
+
+            <!-- Floating Action Button (FAB Rouge +) pour vendre une carte (F22_04, F24) -->
+            <Button
+                Text="+"
+                FontSize="28"
+                FontAttributes="Bold"
+                TextColor="#FFFFFF"
+                BackgroundColor="#E63946"
+                WidthRequest="56"
+                HeightRequest="56"
+                CornerRadius="28"
+                HorizontalOptions="End"
+                VerticalOptions="End"
+                Margin="0,0,12,16"
+                Command="{Binding OuvrirCreationOffreCommand}" />
+        </Grid>
+
+        <!-- Barre de pagination (14 offres par page, affichée uniquement s'il y a au moins 2 pages) -->
+        <Border
+            Grid.Row="3"
+            IsVisible="{Binding AfficherPagination}"
+            Stroke="#331A20"
+            StrokeThickness="1"
+            BackgroundColor="#180D11"
+            StrokeShape="RoundRectangle 12"
+            Padding="10,6"
+            Margin="0,8,0,10">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" VerticalOptions="Center">
+                <Button
+                    Grid.Column="0"
+                    Text="◀ Précédent"
+                    Command="{Binding PagePrecedenteCommand}"
+                    IsEnabled="{Binding PeutAllerPagePrecedente}"
+                    BackgroundColor="#241317"
+                    TextColor="#FFFFFF"
+                    BorderColor="#3D1E25"
+                    BorderWidth="1"
+                    CornerRadius="8"
+                    HeightRequest="36"
+                    Padding="12,0"
+                    FontSize="12"
+                    FontAttributes="Bold" />
+
+                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+                    <HorizontalStackLayout Spacing="6" HorizontalOptions="Center" VerticalOptions="Center">
+                        <Label
+                            Text="Page"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            TextColor="#D1D5DB"
+                            VerticalOptions="Center" />
+                        <Border
+                            Stroke="#E63946"
+                            StrokeThickness="1"
+                            BackgroundColor="#241317"
+                            StrokeShape="RoundRectangle 6"
+                            Padding="4,0"
+                            HeightRequest="28"
+                            WidthRequest="46"
+                            VerticalOptions="Center">
+                            <Entry
+                                Text="{Binding SaisiePage}"
+                                Keyboard="Numeric"
+                                ReturnCommand="{Binding AllerAPageCommand}"
+                                FontSize="12"
+                                FontAttributes="Bold"
+                                TextColor="#FFFFFF"
+                                BackgroundColor="Transparent"
+                                HorizontalTextAlignment="Center"
+                                VerticalTextAlignment="Center"
+                                Margin="0,-4" />
+                        </Border>
+                        <Label
+                            Text="{Binding NombreTotalPages, StringFormat='/ {0}'}"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            TextColor="#FFFFFF"
+                            VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <Label
+                        Text="14 voitures par page"
+                        FontSize="10"
+                        TextColor="#9CA3AF"
+                        HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+
+                <Button
+                    Grid.Column="2"
+                    Text="Suivant ▶"
+                    Command="{Binding PageSuivanteCommand}"
+                    IsEnabled="{Binding PeutAllerPageSuivante}"
+                    BackgroundColor="#E63946"
+                    TextColor="#FFFFFF"
+                    CornerRadius="8"
+                    HeightRequest="36"
+                    Padding="14,0"
+                    FontSize="12"
+                    FontAttributes="Bold" />
+            </Grid>
+        </Border>
+
+    </Grid>
+</ContentPage>

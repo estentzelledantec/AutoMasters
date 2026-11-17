@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AutoMasters.Vues.CataloguePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:AutoMasters.VuesModeles"
+    xmlns:modeles="clr-namespace:AutoMasters.Modeles"
+    x:DataType="vm:CatalogueVueModele"
+    BackgroundColor="#10080B"
+    Title="Catalogue"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="16,16,16,0">
+
+        <!-- 1. En-tête de la page -->
+        <VerticalStackLayout Grid.Row="0" Spacing="4" Margin="0,0,0,12">
+            <Label
+                Text="CATALOGUE"
+                FontSize="24"
+                FontAttributes="Bold"
+                TextColor="#FFFFFF"
+                CharacterSpacing="1" />
+            <Label
+                Text="{Binding NombreResultatsFormate}"
+                FontSize="12"
+                TextColor="#9CA3AF" />
+        </VerticalStackLayout>
+
+        <!-- 2. Barre de recherche temps réel -->
+        <Border
+            Grid.Row="1"
+            Stroke="#331A20"
+            StrokeThickness="1"
+            BackgroundColor="#1E1014"
+            StrokeShape="RoundRectangle 12"
+            Margin="0,0,0,12"
+            Padding="4,0">
+            <SearchBar
+                Placeholder="Rechercher une marque, un modèle..."
+                Text="{Binding TexteRecherche}"
+                TextColor="#FFFFFF"
+                PlaceholderColor="#6B7280"
+                CancelButtonColor="#E63946"
+                BackgroundColor="Transparent"
+                HeightRequest="46"
+                SearchCommand="{Binding RechercherCommand}" />
+        </Border>
+
+        <!-- 3. Sélecteur de rareté (Puces horizontales et Picker) -->
+        <Grid Grid.Row="2" Margin="0,0,0,12">
+            <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                <HorizontalStackLayout Spacing="8">
+                    <!-- Puce TOUTES -->
+                    <Button
+                        Text="TOUTES"
+                        Command="{Binding FiltrerParRareteCommand}"
+                        CommandParameter="TOUTES"
+                        HeightRequest="36"
+                        Padding="14,0"
+                        CornerRadius="8"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        BackgroundColor="#221215"
+                        TextColor="#FFFFFF"
+                        BorderColor="#E63946"
+                        BorderWidth="1" />
+
+                    <!-- Puce COMMUNE -->
+                    <Button
+                        Text="COMMUNE"
+                        Command="{Binding FiltrerParRareteCommand}"
+                        CommandParameter="COMMUNE"
+                        HeightRequest="36"
+                        Padding="14,0"
+                        CornerRadius="8"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        BackgroundColor="#1E2024"
+                        TextColor="#9CA3AF"
+                        BorderColor="#374151"
+                        BorderWidth="1" />
+
+                    <!-- Puce RARE -->
+                    <Button
+                        Text="RARE"
+                        Command="{Binding FiltrerParRareteCommand}"
+                        CommandParameter="RARE"
+                        HeightRequest="36"
+                        Padding="14,0"
+                        CornerRadius="8"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        BackgroundColor="#0E2338"
+                        TextColor="#38BDF8"
+                        BorderColor="#0284C7"
+                        BorderWidth="1" />
+
+                    <!-- Puce ÉPIQUE -->
+                    <Button
+                        Text="ÉPIQUE"
+                        Command="{Binding FiltrerParRareteCommand}"
+                        CommandParameter="ÉPIQUE"
+                        HeightRequest="36"
+                        Padding="14,0"
+                        CornerRadius="8"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        BackgroundColor="#251433"
+                        TextColor="#A855F7"
+                        BorderColor="#9333EA"
+                        BorderWidth="1" />
+
+                    <!-- Puce LÉGENDAIRE -->
+                    <Button
+                        Text="★ LÉGENDAIRE"
+                        Command="{Binding FiltrerParRareteCommand}"
+                        CommandParameter="LÉGENDAIRE"
+                        HeightRequest="36"
+                        Padding="14,0"
+                        CornerRadius="8"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        BackgroundColor="#2A1E0D"
+                        TextColor="#F59E0B"
+                        BorderColor="#D97706"
+                        BorderWidth="1" />
+                </HorizontalStackLayout>
+            </ScrollView>
+
+            <Picker
+                IsVisible="False"
+                Title="Filtrer par rareté"
+                ItemsSource="{Binding Raretes}"
+                SelectedItem="{Binding RareteSelectionnee}" />
+        </Grid>
+
+        <!-- 4. Conteneur principal avec Tirer pour actualiser -->
+        <RefreshView
+            Grid.Row="3"
+            IsRefreshing="{Binding EstEnActualisation}"
+            Command="{Binding ActualiserCommand}"
+            RefreshColor="#E63946">
+
+            <Grid>
+                <!-- Indicateur de chargement central -->
+                <ActivityIndicator
+                    Color="#E63946"
+                    IsRunning="{Binding EstOccupe}"
+                    IsVisible="{Binding EstOccupe}"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    WidthRequest="48"
+                    HeightRequest="48" />
+
+                <!-- CollectionView des cartes automobiles en grille 2 colonnes -->
+                <CollectionView
+                    ItemsSource="{Binding Cartes}"
+                    SelectionMode="Single"
+                    SelectedItem="{Binding CarteSelectionnee}"
+                    SelectionChangedCommand="{Binding SelectionnerCarteCommand}"
+                    IsVisible="{Binding EstDisponible}">
+
+                    <CollectionView.ItemsLayout>
+                        <GridItemsLayout
+                            Orientation="Vertical"
+                            Span="2"
+                            HorizontalItemSpacing="12"
+                            VerticalItemSpacing="12" />
+                    </CollectionView.ItemsLayout>
+
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="modeles:Carte">
+                            <Border
+                                StrokeShape="RoundRectangle 18"
+                                StrokeThickness="1.5"
+                                Stroke="#64748B"
+                                BackgroundColor="#1E293B"
+                                Padding="0">
+
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="LÉGENDAIRE">
+                                        <Setter Property="Stroke" Value="#F59E0B" />
+                                        <Setter Property="BackgroundColor" Value="#78350F" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="ÉPIQUE">
+                                        <Setter Property="Stroke" Value="#EC4899" />
+                                        <Setter Property="BackgroundColor" Value="#701A75" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="RARE">
+                                        <Setter Property="Stroke" Value="#0284C7" />
+                                        <Setter Property="BackgroundColor" Value="#0C4A6E" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="COMMUNE">
+                                        <Setter Property="Stroke" Value="#64748B" />
+                                        <Setter Property="BackgroundColor" Value="#1E293B" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CatalogueVueModele}}, Path=SelectionnerCarteCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+
+                                <Grid RowDefinitions="155,Auto">
+                                    <!-- 1. Photo du véhicule plus grande pour bien voir la voiture -->
+                                    <Grid Grid.Row="0">
+                                        <Border
+                                            StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 17,17,0,0"
+                                            Padding="0"
+                                            BackgroundColor="#201518">
+                                            <Image
+                                                Source="{Binding ImageUrl}"
+                                                Aspect="AspectFill"
+                                                HorizontalOptions="Fill"
+                                                VerticalOptions="Fill" />
+                                        </Border>
+
+                                        <!-- Badge Rareté en haut à gauche en pur XAML -->
+                                        <Border
+                                            StrokeThickness="0"
+                                            BackgroundColor="#64748B"
+                                            StrokeShape="RoundRectangle 6"
+                                            Padding="6,2"
+                                            Margin="8"
+                                            HorizontalOptions="Start"
+                                            VerticalOptions="Start">
+                                            <Border.Triggers>
+                                                <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="LÉGENDAIRE">
+                                                    <Setter Property="BackgroundColor" Value="#F59E0B" />
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="ÉPIQUE">
+                                                    <Setter Property="BackgroundColor" Value="#EC4899" />
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="RARE">
+                                                    <Setter Property="BackgroundColor" Value="#0284C7" />
+                                                </DataTrigger>
+                                            </Border.Triggers>
+                                            <Label
+                                                Text="{Binding BadgeRareteCourt}"
+                                                FontSize="10"
+                                                FontAttributes="Bold"
+                                                TextColor="#10080B" />
+                                        </Border>
+
+                                        <!-- Badge Année discret en haut à droite -->
+                                        <Border
+                                            StrokeThickness="0"
+                                            BackgroundColor="#B310080B"
+                                            StrokeShape="RoundRectangle 6"
+                                            Padding="6,2"
+                                            Margin="8"
+                                            HorizontalOptions="End"
+                                            VerticalOptions="Start">
+                                            <Label
+                                                Text="{Binding Annee}"
+                                                FontSize="10"
+                                                FontAttributes="Bold"
+                                                TextColor="#F3F4F6" />
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- 2. Bandeau d'informations compact en bas de la carte -->
+                                    <VerticalStackLayout Grid.Row="1" Padding="10,7,10,9" Spacing="2">
+                                        <!-- Marque et Modèle répartis proprement -->
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                                            <Label
+                                                Grid.Column="0"
+                                                Text="{Binding Marque}"
+                                                FontSize="13"
+                                                FontAttributes="Bold"
+                                                TextColor="#FFFFFF"
+                                                LineBreakMode="TailTruncation" />
+                                            <Label
+                                                Grid.Column="1"
+                                                Text="{Binding PuissanceFormatee}"
+                                                FontSize="10"
+                                                FontAttributes="Bold"
+                                                TextColor="#9CA3AF"
+                                                VerticalOptions="Center" />
+                                        </Grid>
+
+                                        <Label
+                                            Text="{Binding Modele}"
+                                            FontSize="11"
+                                            TextColor="#D1D5DB"
+                                            LineBreakMode="TailTruncation" />
+
+                                        <!-- Prix réel en Euros (€) et Valeur en Jetons en dessous -->
+                                        <VerticalStackLayout Spacing="1" Margin="0,3,0,0">
+                                            <HorizontalStackLayout Spacing="4" VerticalOptions="Center">
+                                                <Label Text="💶" FontSize="10" VerticalOptions="Center" />
+                                                <Label
+                                                    Text="{Binding PrixReelFormate}"
+                                                    FontSize="11"
+                                                    FontAttributes="Bold"
+                                                    TextColor="#E5E7EB"
+                                                    VerticalOptions="Center" />
+                                            </HorizontalStackLayout>
+                                            <HorizontalStackLayout Spacing="4" VerticalOptions="Center">
+                                                <Label Text="🪙" FontSize="10" VerticalOptions="Center" />
+                                                <Label
+                                                    Text="{Binding ValeurJetonsFormatee}"
+                                                    FontSize="11"
+                                                    FontAttributes="Bold"
+                                                    TextColor="#FBBF24"
+                                                    VerticalOptions="Center" />
+                                            </HorizontalStackLayout>
+                                        </VerticalStackLayout>
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+
+                    <!-- État vide si aucune carte ne correspond aux critères -->
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout
+                            Padding="32"
+                            Spacing="12"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center">
+                            <Label
+                                Text="🔍"
+                                FontSize="48"
+                                HorizontalTextAlignment="Center" />
+                            <Label
+                                Text="Aucun véhicule trouvé"
+                                FontSize="18"
+                                FontAttributes="Bold"
+                                TextColor="#FFFFFF"
+                                HorizontalTextAlignment="Center" />
+                            <Label
+                                Text="Aucune carte automobile ne correspond à votre recherche ou filtre actif."
+                                FontSize="13"
+                                TextColor="#9CA3AF"
+                                HorizontalTextAlignment="Center" />
+                            <Button
+                                Text="RÉINITIALISER LES FILTRES"
+                                Command="{Binding ReinitialiserFiltresCommand}"
+                                BackgroundColor="#E63946"
+                                TextColor="#FFFFFF"
+                                FontAttributes="Bold"
+                                CornerRadius="8"
+                                HeightRequest="40"
+                                Margin="0,8,0,0" />
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+                </CollectionView>
+            </Grid>
+        </RefreshView>
+
+        <!-- 5. Barre de pagination (14 voitures par page, affichée uniquement s'il y a au moins 2 pages) -->
+        <Border
+            Grid.Row="4"
+            IsVisible="{Binding AfficherPagination}"
+            Stroke="#331A20"
+            StrokeThickness="1"
+            BackgroundColor="#180D11"
+            StrokeShape="RoundRectangle 12"
+            Padding="10,6"
+            Margin="0,8,0,10">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" VerticalOptions="Center">
+                <Button
+                    Grid.Column="0"
+                    Text="◀ Précédent"
+                    Command="{Binding PagePrecedenteCommand}"
+                    IsEnabled="{Binding PeutAllerPagePrecedente}"
+                    BackgroundColor="#241317"
+                    TextColor="#FFFFFF"
+                    BorderColor="#3D1E25"
+                    BorderWidth="1"
+                    CornerRadius="8"
+                    HeightRequest="36"
+                    Padding="12,0"
+                    FontSize="12"
+                    FontAttributes="Bold" />
+
+                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+                    <HorizontalStackLayout Spacing="6" HorizontalOptions="Center" VerticalOptions="Center">
+                        <Label
+                            Text="Page"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            TextColor="#D1D5DB"
+                            VerticalOptions="Center" />
+                        <Border
+                            Stroke="#E63946"
+                            StrokeThickness="1"
+                            BackgroundColor="#241317"
+                            StrokeShape="RoundRectangle 6"
+                            Padding="4,0"
+                            HeightRequest="28"
+                            WidthRequest="46"
+                            VerticalOptions="Center">
+                            <Entry
+                                Text="{Binding SaisiePage}"
+                                Keyboard="Numeric"
+                                ReturnCommand="{Binding AllerAPageCommand}"
+                                FontSize="12"
+                                FontAttributes="Bold"
+                                TextColor="#FFFFFF"
+                                BackgroundColor="Transparent"
+                                HorizontalTextAlignment="Center"
+                                VerticalTextAlignment="Center"
+                                Margin="0,-4" />
+                        </Border>
+                        <Label
+                            Text="{Binding NombreTotalPages, StringFormat='/ {0}'}"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            TextColor="#FFFFFF"
+                            VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <Label
+                        Text="14 voitures par page"
+                        FontSize="10"
+                        TextColor="#9CA3AF"
+                        HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+
+                <Button
+                    Grid.Column="2"
+                    Text="Suivant ▶"
+                    Command="{Binding PageSuivanteCommand}"
+                    IsEnabled="{Binding PeutAllerPageSuivante}"
+                    BackgroundColor="#E63946"
+                    TextColor="#FFFFFF"
+                    CornerRadius="8"
+                    HeightRequest="36"
+                    Padding="14,0"
+                    FontSize="12"
+                    FontAttributes="Bold" />
+            </Grid>
+        </Border>
+
+    </Grid>
+</ContentPage>

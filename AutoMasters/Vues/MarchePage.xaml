@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!-- Page du Marché permettant d'acheter, réserver ou mettre en vente des voitures -->
+<!-- x:DataType="vm:MarcheVueModele" : relie cette vue à MarcheVueModele pour les Bindings -->
+<!-- BackgroundColor="#10080B" : couleur de fond de la page / Shell.NavBarIsVisible="False" : masque la barre du haut -->
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
@@ -10,11 +13,15 @@
     Title="Marché"
     Shell.NavBarIsVisible="False">
 
+    <!-- RowDefinitions="Auto,Auto,*,Auto" : 4 lignes (0: En-tête, 1: Recherche et filtres, 2: Liste des offres (*), 3: Pagination) -->
+    <!-- Margin="16,12,16,0" : marge extérieure (16px à gauche/droite, 12px en haut) -->
     <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="16,12,16,0">
         
-        <!-- En-tête : Titre, Solde Portefeuille en Jetons & Badge '🟢 EN DIRECT' (Figma Screen 4) -->
+        <!-- En-tête de la page Marché avec le solde en jetons -->
+        <!-- ColumnDefinitions="*,Auto" : titre à gauche (*) et badges de solde à droite (Auto) -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
             <VerticalStackLayout Grid.Column="0" Spacing="2">
+                <!-- FontSize="24" : taille du titre / FontAttributes="Bold" : gras / TextColor="#FFFFFF" : blanc -->
                 <Label
                     Text="MARCHÉ"
                     FontSize="24"
@@ -26,8 +33,10 @@
                     TextColor="#9CA3AF" />
             </VerticalStackLayout>
 
+            <!-- HorizontalOptions="End" : aligne les badges à droite / VerticalOptions="Center" : centre verticalement -->
             <VerticalStackLayout Grid.Column="1" Spacing="4" HorizontalOptions="End" VerticalOptions="Center">
-                <!-- Badge Solde Portefeuille Liquide en Jetons -->
+                <!-- Badge Solde Portefeuille en Jetons -->
+                <!-- Stroke="#D97706" : bordure orange/dorée / StrokeThickness="1" : épaisseur 1px / StrokeShape="RoundRectangle 10" : coins arrondis -->
                 <Border
                     Stroke="#D97706"
                     StrokeThickness="1"
@@ -209,7 +218,7 @@
                                                     FontAttributes="Bold"
                                                     TextColor="#FFFFFF" />
                                                 
-                                                <!-- Badge Rareté en pur XAML -->
+                                                <!-- Badge de rareté -->
                                                 <Border
                                                     Grid.Column="1"
                                                     Stroke="#64748B"
@@ -283,7 +292,8 @@
                                         </VerticalStackLayout>
                                     </Grid>
 
-                                    <!-- Ligne 2A : Actions pour les offres des autres joueurs (ACHETER IMMÉDIATEMENT / RÉSERVER) -->
+                                    <!-- Boutons Acheter et Réserver (visibles uniquement si l'annonce vient d'un autre joueur) -->
+                                    <!-- RelativeSource AncestorType permet au bouton situé dans la liste d'appeler la commande du ViewModel de la page -->
                                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding EstAchetableParMoi}">
                                         <Button
                                             Grid.Column="0"
@@ -353,7 +363,7 @@
                 </CollectionView>
             </RefreshView>
 
-            <!-- Floating Action Button (FAB Rouge +) pour vendre une carte (F22_04, F24) -->
+            <!-- Bouton flottant (+) pour mettre une voiture en vente -->
             <Button
                 Text="+"
                 FontSize="28"

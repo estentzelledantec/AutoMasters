@@ -3,8 +3,7 @@ using Newtonsoft.Json;
 namespace AutoMasters.Modeles;
 
 /// <summary>
-/// Modèle représentant une offre de vente sur le marché numérique (GET /cards/{id}/offers, POST /offers).
-/// Prend en charge le verrouillage par réservation temporaire (RM003, RM004).
+/// Classe qui représente une annonce de vente d'une voiture sur le marché
 /// </summary>
 public class Offre
 {
@@ -24,16 +23,10 @@ public class Offre
 
     #region Constructeurs
 
-    /// <summary>
-    /// Constructeur par défaut requis pour la désérialisation Newtonsoft.Json.
-    /// </summary>
     public Offre()
     {
     }
 
-    /// <summary>
-    /// Constructeur d'initialisation complète.
-    /// </summary>
     public Offre(string identifiant, string identifiantExemplaire, decimal prix, string vendeur = "", string statut = "active", Carte? carte = null)
     {
         this.identifiant = identifiant;
@@ -115,60 +108,29 @@ public class Offre
 
     #region Methodes
 
-    /// <summary>
-    /// Indique si l'offre est active et disponible pour un achat immédiat.
-    /// </summary>
-    [JsonIgnore]
     public bool EstDisponibleAchat => string.Equals(statut, "active", StringComparison.OrdinalIgnoreCase) && !EstReservee;
 
     /// <summary>
-    /// Indique si cette annonce a été publiée par le joueur actuellement connecté.
-    /// Tant qu'elle n'est pas vendue, c'est toujours sa voiture : il ne peut ni l'acheter ni la réserver lui-même.
+    /// Indique si l'offre a été mise en ligne par le joueur connecté (il ne peut pas acheter sa propre vente)
     /// </summary>
-    [JsonIgnore]
     public bool EstMonOffre => !string.IsNullOrWhiteSpace(vendeur) &&
         string.Equals(vendeur.Trim(), AutoMasters.Services.ServiceAPI.Instance.UtilisateurConnecte?.Trim(), StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>
-    /// Indique si l'offre appartient à un autre joueur et peut donc être achetée ou réservée.
-    /// </summary>
-    [JsonIgnore]
     public bool EstAchetableParMoi => !EstMonOffre;
 
-    /// <summary>
-    /// Prix formaté avec unité pour l'affichage (ex: "480 000 coins").
-    /// </summary>
-    [JsonIgnore]
-    public string PrixFormate => $"{Prix:N0} coins";
+    public string PrixFormate => $"{Prix:N0} €";
 
-    /// <summary>
-    /// Prix réel équivalent en euros de l'offre.
-    /// </summary>
-    [JsonIgnore]
-    public decimal PrixReelEuros => Prix >= 1000m ? Prix : Prix * 1000m;
+    public decimal PrixReelEuros => Prix;
 
-    /// <summary>
-    /// Prix réel formaté en euros (ex: "325 000 €").
-    /// </summary>
-    [JsonIgnore]
     public string PrixReelFormate => string.Format(System.Globalization.CultureInfo.GetCultureInfo("fr-FR"), "{0:N0} €", PrixReelEuros);
 
     /// <summary>
-    /// Prix demandé en jetons sur le marché (Prix réel / 1000, ex: 325 000 € = 325 Jetons).
+    /// Prix de vente converti en jetons (Prix / 1 000)
     /// </summary>
-    [JsonIgnore]
     public decimal ValeurJetons => System.Math.Round(PrixReelEuros / 1000m, 2);
 
-    /// <summary>
-    /// Prix demandé en jetons formaté pour la place de marché (ex: "325 Jetons").
-    /// </summary>
-    [JsonIgnore]
     public string ValeurJetonsFormatee => Carte.FormaterMontantJetons(ValeurJetons);
 
-    /// <summary>
-    /// Libellé du statut en français pour l'affichage.
-    /// </summary>
-    [JsonIgnore]
     public string StatutLibelle
     {
         get
@@ -187,7 +149,7 @@ public class Offre
 
     public override string ToString()
     {
-        return $"Offre #{Identifiant} - {Carte?.Modele ?? IdentifiantExemplaire} à {PrixFormate} ({StatutLibelle})";
+        return $"Offre #{Identifiant} - {Carte?.Modele ?? IdentifiantExemplaire} à {ValeurJetonsFormatee} ({StatutLibelle})";
     }
 
     #endregion

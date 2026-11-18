@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!-- Page Mes Ordres affichant les voitures mises en vente par le joueur et ses réservations -->
+<!-- x:DataType="vm:OrdresVueModele" : relie la page à OrdresVueModele pour les Bindings -->
 <ContentPage
     x:Class="AutoMasters.Vues.OrdresPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -10,9 +12,10 @@
     Title="Ordres"
     Shell.NavBarIsVisible="False">
 
+    <!-- RowDefinitions="Auto,Auto,*,Auto" : 4 lignes (0: Titre, 1: Onglets Mes Ventes/Réservations, 2: Liste (*), 3: Pagination) -->
     <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="16,16,16,0">
 
-        <!-- 1. En-tête de la page -->
+        <!-- En-tête de la page -->
         <VerticalStackLayout Grid.Row="0" Spacing="4" Margin="0,0,0,12">
             <Label
                 Text="MES ORDRES"
@@ -26,7 +29,8 @@
                 TextColor="#9CA3AF" />
         </VerticalStackLayout>
 
-        <!-- 2. Sélecteur Segmenté (Onglets internes Mes Ventes / Réservations) -->
+        <!-- Boutons permettant de basculer entre l'onglet "Mes Ventes" (0) et "Mes Réservations" (1) -->
+        <!-- ColumnDefinitions="*,*" : partage la largeur en 2 colonnes égales -->
         <Border
             Grid.Row="1"
             Stroke="#331A20"
@@ -47,6 +51,7 @@
                     TextColor="#A0A0A0"
                     Command="{Binding ChangerOngletCommand}"
                     CommandParameter="0">
+                    <!-- DataTrigger : met le bouton en rouge (#E63946) avec texte blanc quand AfficherMesVentes vaut True -->
                     <Button.Triggers>
                         <DataTrigger TargetType="Button" Binding="{Binding AfficherMesVentes}" Value="True">
                             <Setter Property="BackgroundColor" Value="#E63946" />
@@ -144,6 +149,7 @@
                                     </Border>
 
                                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                        <!-- StringFormat permet d'ajouter du texte fixe avant la valeur envoyée par le Binding -->
                                         <Label
                                             Text="{Binding Carte.NomComplet}"
                                             FontAttributes="Bold"
@@ -237,6 +243,7 @@
                                     </Border>
 
                                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                        <!-- StringFormat permet d'ajouter du texte fixe avant la valeur envoyée par le Binding -->
                                         <Label
                                             Text="{Binding Carte.NomComplet}"
                                             FontAttributes="Bold"

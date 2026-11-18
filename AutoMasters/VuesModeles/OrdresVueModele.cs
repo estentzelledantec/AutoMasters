@@ -13,8 +13,7 @@ using AutoMasters.Vues;
 namespace AutoMasters.VuesModeles;
 
 /// <summary>
-/// Vue-modèle de la page Mes Ordres (Fonctionnalité F33).
-/// Permet d'afficher les ventes en cours et les réservations de l'utilisateur.
+/// ViewModel de la page Mes Ordres (ventes en cours et réservations)
 /// </summary>
 public partial class OrdresVueModele : ObservableObject
 {
@@ -77,7 +76,6 @@ public partial class OrdresVueModele : ObservableObject
     /// <summary>
     /// Constructeur avec injection du service HTTP.
     /// </summary>
-    /// <param name="serviceApi">Instance de ServiceAPI.</param>
     public OrdresVueModele(ServiceAPI? serviceApi)
     {
         this.serviceApi = serviceApi ?? ServiceAPI.Instance;
@@ -160,9 +158,7 @@ public partial class OrdresVueModele : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Permet de changer directement de page lorsque l'utilisateur saisit un numéro de page.
-    /// </summary>
+    // Permet de changer directement de page lorsque l'utilisateur saisit un numéro de page.
     partial void OnSaisiePageChanged(string value)
     {
         if (int.TryParse(value?.Trim(), out int numeroPage))

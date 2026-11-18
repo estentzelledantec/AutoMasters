@@ -12,11 +12,9 @@ using AutoMasters.Services;
 namespace AutoMasters.VuesModeles;
 
 /// <summary>
-/// ViewModel responsable de la fiche détaillée d'un véhicule (Fonctionnalité F22).
-/// Reçoit la carte sélectionnée ou son identifiant via Shell QueryProperty,
-/// charge les spécifications depuis ServiceAPI si nécessaire et navigue vers le marché.
-/// Conforme aux conventions BTS SIO SLAM 2ème année.
+/// ViewModel de la page de détails d'une voiture
 /// </summary>
+// [QueryProperty] permet de récupérer la voiture sélectionnée envoyée lors du changement de page avec Shell.Current.GoToAsync
 [QueryProperty(nameof(CarteSelectionnee), "carte")]
 [QueryProperty(nameof(CarteId), "id")]
 public partial class FicheCarteVueModele : ObservableObject
@@ -43,7 +41,6 @@ public partial class FicheCarteVueModele : ObservableObject
     [NotifyPropertyChangedFor(nameof(ZeroACentFormate))]
     [NotifyPropertyChangedFor(nameof(Rarete))]
     [NotifyPropertyChangedFor(nameof(PrixOfficiel))]
-    [NotifyPropertyChangedFor(nameof(PrixOfficielFormate))]
     [NotifyPropertyChangedFor(nameof(PrixReelFormate))]
     [NotifyPropertyChangedFor(nameof(ValeurJetonsFormatee))]
     [NotifyPropertyChangedFor(nameof(VariationCoursFormatee))]
@@ -84,18 +81,10 @@ public partial class FicheCarteVueModele : ObservableObject
 
     #region Constructeurs
 
-    /// <summary>
-    /// Constructeur par défaut utilisant l'instance Singleton de ServiceAPI.
-    /// Utilisé lors de l'instanciation de la vue.
-    /// </summary>
     public FicheCarteVueModele() : this(ServiceAPI.Instance)
     {
     }
 
-    /// <summary>
-    /// Constructeur avec injection du service HTTP pour les tests unitaires.
-    /// </summary>
-    /// <param name="serviceApi">Instance de ServiceAPI.</param>
     public FicheCarteVueModele(ServiceAPI? serviceApi)
     {
         this.serviceApi = serviceApi ?? ServiceAPI.Instance;
@@ -139,8 +128,6 @@ public partial class FicheCarteVueModele : ObservableObject
 
     public decimal PrixOfficiel => CarteSelectionnee?.PrixOfficiel ?? 0m;
 
-    public string PrixOfficielFormate => CarteSelectionnee?.PrixOfficielFormate ?? $"{PrixOfficiel:N0} coins";
-
     public string PrixReelFormate => CarteSelectionnee?.PrixReelFormate ?? $"{PrixOfficiel:N0} €";
 
     public string ValeurJetonsFormatee => CarteSelectionnee?.ValeurJetonsFormatee ?? Carte.FormaterMontantJetons(Math.Round(PrixOfficiel / Carte.TauxConversionJeton, 2));
@@ -167,9 +154,7 @@ public partial class FicheCarteVueModele : ObservableObject
 
     #region Methodes
 
-    /// <summary>
-    /// Charge automatiquement la courbe de marché dès qu'une carte est sélectionnée.
-    /// </summary>
+    // Charge automatiquement la courbe de marché dès qu'une carte est sélectionnée.
     partial void OnCarteSelectionneeChanged(Carte? value)
     {
         if (value != null)
@@ -207,7 +192,7 @@ public partial class FicheCarteVueModele : ObservableObject
     }
 
     /// <summary>
-    /// Récupère l'historique des cotations boursières depuis l'API (/cards/{id}/quotes) et construit la courbe de marché (RM001).
+    /// Récupère l'historique des prix de la voiture depuis l'API pour afficher la courbe
     /// </summary>
     [RelayCommand]
     public async Task ChargerHistoriqueCoursAsync()
@@ -232,9 +217,8 @@ public partial class FicheCarteVueModele : ObservableObject
                     ? string.Format(cultureFr, "{0:N0} €", maxP)
                     : string.Format(cultureFr, "{0:N2} €", maxP);
 
-                // Notifie l'interface si le dernier cours ou l'horodatage a été rafraîchi depuis l'API
+                // Met à jour l'affichage du prix et de la date sur la fiche
                 OnPropertyChanged(nameof(PrixOfficiel));
-                OnPropertyChanged(nameof(PrixOfficielFormate));
                 OnPropertyChanged(nameof(PrixReelFormate));
                 OnPropertyChanged(nameof(ValeurJetonsFormatee));
                 OnPropertyChanged(nameof(VariationCoursFormatee));
@@ -244,12 +228,12 @@ public partial class FicheCarteVueModele : ObservableObject
         }
         catch
         {
-            // Conserve l'affichage de la fiche même si l'historique des cours n'est pas joignable
+            // Ignore si l'historique n'est pas disponible
         }
     }
 
     /// <summary>
-    /// Offre l'exemplaire possédé à un autre compte étudiant (Alice, Bob ou Charlie) conformément aux règles RM009 et EF060.
+    /// Permet d'offrir cette voiture en cadeau à un autre joueur (Alice, Bob ou Charlie)
     /// </summary>
     [RelayCommand]
     private async Task OffrirCarteAsync()
@@ -287,7 +271,7 @@ public partial class FicheCarteVueModele : ObservableObject
         string destinataire = action.ToLowerInvariant();
 
         bool confirmer = await pageActive.DisplayAlertAsync(
-            "Confirmation du cadeau (RM009)",
+            "Confirmation du cadeau",
             $"Confirmez-vous le don de votre {CarteSelectionnee?.NomComplet} à {action.ToUpper()} ?\n\nCe transfert est définitif et sans contrepartie financière.",
             "Offrir la voiture",
             "Annuler");
@@ -314,10 +298,6 @@ public partial class FicheCarteVueModele : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Réaction à la réception de l'identifiant de carte via Shell QueryProperty.
-    /// Si l'objet complet n'est pas déjà présent en mémoire, lance le chargement API.
-    /// </summary>
     partial void OnCarteIdChanged(string value)
     {
         if (!string.IsNullOrWhiteSpace(value) && (CarteSelectionnee == null || CarteSelectionnee.Identifiant != value))
@@ -327,9 +307,8 @@ public partial class FicheCarteVueModele : ObservableObject
     }
 
     /// <summary>
-    /// Récupère la fiche technique complète de la carte via son identifiant (F09).
+    /// Charge les informations complètes de la carte à partir de son identifiant
     /// </summary>
-    /// <param name="id">Identifiant de la carte à charger.</param>
     public async Task ChargerDetailsAsync(string? id = null)
     {
         string cibleId = id ?? CarteId;

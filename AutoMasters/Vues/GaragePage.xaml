@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!-- Page du Garage personnel affichant le Patrimoine, le Portefeuille en Jetons, les Boosters et la liste des voitures possédées -->
+<!-- x:DataType="vm:GarageVueModele" : relie la page à GarageVueModele pour les Bindings -->
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
@@ -10,21 +12,23 @@
     Title="Garage"
     Shell.NavBarIsVisible="False">
 
+    <!-- Grid principale : permet de superposer la fenêtre d'ouverture de booster par-dessus la page du garage -->
     <Grid>
-        <!-- Vue Principale (Scrollable) -->
+        <!-- Contenu principal défilable (ScrollView) -->
         <ScrollView>
+            <!-- Padding="16,12" : marge intérieure / Spacing="16" : espace vertical entre chaque bloc -->
             <VerticalStackLayout Padding="16,12" Spacing="16">
                 
-                <!-- Titre Page -->
+                <!-- Titre de la page -->
                 <Label
                     Text="GARAGE"
                     FontSize="24"
                     FontAttributes="Bold"
                     TextColor="#FFFFFF" />
 
-                <!-- 1. En-tête Double Devise : PATRIMOINE (Voitures) & PORTEFEUILLE (Argent liquide en Jetons) -->
+                <!-- Deux encadrés côte à côte (ColumnDefinitions="*,*") : Patrimoine à gauche et Portefeuille liquide à droite -->
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                    <!-- Carte PATRIMOINE (Valeur de l'ensemble des voitures possédées : Prix / 1 000) -->
+                    <!-- Carte PATRIMOINE : somme de la valeur des voitures possédées (Stroke : bordure / RoundRectangle 14 : coins arrondis) -->
                     <Border
                         Grid.Column="0"
                         Stroke="#2A1E24"
@@ -95,7 +99,7 @@
                     </Border>
                 </Grid>
 
-                <!-- 2. Bannière Booster Pack (Figma Screen 2 / F26) -->
+                <!-- Bannière d'ouverture de booster -->
                 <Border
                     Stroke="#E63946"
                     StrokeThickness="1"
@@ -183,7 +187,7 @@
                                     </Border.GestureRecognizers>
                                     <Grid ColumnDefinitions="84,*,Auto" ColumnSpacing="12">
                                         
-                                        <!-- Miniature + Badge Multiplicateur 'x2' (F25_04, F25_B04, F25_B05) -->
+                                        <!-- Photo de la voiture et quantité -->
                                         <Grid Grid.Column="0">
                                             <Border
                                                 StrokeThickness="0"
@@ -275,7 +279,7 @@
                                                 TextColor="#10B981"
                                                 FontSize="11"
                                                 HorizontalTextAlignment="End" />
-                                            <!-- Boutons d'action lorsque la voiture est libre dans le garage -->
+                                            <!-- Boutons Vendre, Marché et Offrir (RelativeSource AncestorType permet d'appeler les commandes de GarageVueModele depuis un élément de la liste) -->
                                             <HorizontalStackLayout Spacing="6" HorizontalOptions="End" IsVisible="{Binding EstDisponibleDansGarage}">
                                                 <Button
                                                     Text="💰 Vendre"
@@ -435,7 +439,7 @@
             </VerticalStackLayout>
         </ScrollView>
 
-        <!-- Indicateur de chargement central (Feature F32) -->
+        <!-- Indicateur de chargement -->
         <ActivityIndicator
             Color="#E63946"
             IsRunning="{Binding EstOccupe}"
@@ -446,7 +450,7 @@
             HeightRequest="48"
             ZIndex="50" />
 
-        <!-- 4. Overlay Modale d'Ouverture Booster 3 Cartes (Figma Screen 3 / F26, F32) -->
+        <!-- Fenêtre d'ouverture du booster de 3 cartes -->
         <Border
             BackgroundColor="#F010080B"
             StrokeThickness="0"
@@ -473,7 +477,7 @@
                     TextColor="#FFFFFF"
                     HorizontalTextAlignment="Center" />
 
-                <!-- Barres de progression 3 segments en pur XAML (1 segment par carte du booster) -->
+                <!-- Barre de progression des 3 cartes du booster -->
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" Margin="32,0">
                     <BoxView Grid.Column="0" HeightRequest="5" Color="#331A20" CornerRadius="2.5">
                         <BoxView.Triggers>
@@ -504,7 +508,7 @@
                     TextColor="#9CA3AF"
                     HorizontalTextAlignment="Center" />
 
-                <!-- Carte (Face verso cachée ou Face recto révélée) en pur XAML (Feature F32) -->
+                <!-- Carte du booster (face cachée puis face révélée) -->
                 <Border
                     Stroke="#9CA3AF"
                     StrokeThickness="2"

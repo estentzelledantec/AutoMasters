@@ -10,8 +10,7 @@ using AutoMasters.Services;
 namespace AutoMasters.VuesModeles;
 
 /// <summary>
-/// Vue-modèle gérant l'ouverture d'un booster de 3 cartes (Fonctionnalités F26 et F32).
-/// Appelle ServiceAPI.OuvrirBoosterAsync() et affiche les cartes une par une.
+/// ViewModel qui gère l'ouverture d'un booster de 3 cartes
 /// </summary>
 public partial class BoosterVueModele : ObservableObject
 {
@@ -89,7 +88,6 @@ public partial class BoosterVueModele : ObservableObject
     /// <summary>
     /// Constructeur avec injection du service HTTP.
     /// </summary>
-    /// <param name="serviceApi">Instance de ServiceAPI.</param>
     public BoosterVueModele(ServiceAPI? serviceApi)
     {
         this.serviceApi = serviceApi ?? ServiceAPI.Instance;
@@ -102,25 +100,22 @@ public partial class BoosterVueModele : ObservableObject
     public bool EstDisponible => !EstOccupe;
 
     /// <summary>
-    /// Indique si la carte active est sur sa face cachée (Feature F32).
+    /// Indique si la carte est encore retournée (face cachée)
     /// </summary>
     public bool EstFaceCachee => !EstRetournee;
 
-    /// <summary>
-    /// Visibilité dynamique des segments 4 et 5 (masqués pour les boosters de 3 cartes).
-    /// </summary>
     public bool VisibiliteSegment4 => NombreCartesBooster >= 4;
     public bool VisibiliteSegment5 => NombreCartesBooster >= 5;
 
     /// <summary>
-    /// Libellé stylisé de rareté avec étoile pour les légendaires (Figma Screen 4).
+    /// Affiche une étoile devant les cartes légendaires
     /// </summary>
     public string LibelleRareteActuelle => CarteActuelle?.Rarete == "LÉGENDAIRE"
         ? "★ LÉGENDAIRE"
         : (CarteActuelle?.Rarete ?? "COMMUNE");
 
     /// <summary>
-    /// Événement déclenché à la fin de la cérémonie de révélation des cartes du booster.
+    /// Événement déclenché quand les 3 cartes ont été découvertes
     /// </summary>
     public event Action? SurBoosterTermine;
 
@@ -129,7 +124,7 @@ public partial class BoosterVueModele : ObservableObject
     #region Methodes
 
     /// <summary>
-    /// Déclenche l'appel réseau vers POST /boosters/open et initialise la séquence de révélation de 3 cartes.
+    /// Appelle l'API pour ouvrir un booster et tirer les 3 cartes
     /// </summary>
     [RelayCommand]
     public async Task DemarrerOuvertureAsync()
@@ -171,7 +166,7 @@ public partial class BoosterVueModele : ObservableObject
     }
 
     /// <summary>
-    /// Alterne entre l'action de révélation de la carte et le passage à la suivante (F26_04, F26_05, F26_B03, F32).
+    /// Retourne la carte actuelle ou passe à la carte suivante
     /// </summary>
     [RelayCommand]
     public void ActionCarteSuivante()
@@ -236,7 +231,7 @@ public partial class BoosterVueModele : ObservableObject
     }
 
     /// <summary>
-    /// Met à jour l'état visuel des 5 segments de la barre de progression (F26_B02).
+    /// Met à jour la barre de progression en haut de l'écran
     /// </summary>
     private void MettreAJourSegments(int etape)
     {

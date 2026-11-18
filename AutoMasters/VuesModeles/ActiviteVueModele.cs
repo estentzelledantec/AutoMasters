@@ -11,10 +11,7 @@ using Microsoft.Maui.Controls;
 namespace AutoMasters.VuesModeles;
 
 /// <summary>
-/// ViewModel dédié au journal d'Activité et des transactions du collectionneur (Onglet 5).
-/// Affiche l'historique horodaté des ouvertures de boosters, achats, mises en vente,
-/// réservations et dons, avec filtrage par catégorie et indicateurs statistiques.
-/// Conforme au standard BTS SIO SLAM 2ème année (4 régions C# obligatoires).
+/// ViewModel pour la page d'historique des activités (achats, ventes, boosters, cadeaux)
 /// </summary>
 public partial class ActiviteVueModele : ObservableObject
 {
@@ -131,7 +128,7 @@ public partial class ActiviteVueModele : ObservableObject
     [RelayCommand]
     public async Task SeDeconnecterAsync()
     {
-        await _serviceApi.LogoutAsync();
+        await _serviceApi.SeDeconnecterAsync();
         if (Shell.Current != null)
         {
             await Shell.Current.GoToAsync("//ConnexionPage");

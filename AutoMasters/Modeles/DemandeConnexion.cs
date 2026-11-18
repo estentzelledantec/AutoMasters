@@ -3,8 +3,7 @@ using Newtonsoft.Json;
 namespace AutoMasters.Modeles;
 
 /// <summary>
-/// DTO représentant la requête d'authentification envoyée à l'API (POST /auth/login).
-/// Accepte les clés JSON "username" et "email".
+/// Classe envoyée en JSON lors de la connexion à l'API (POST /auth/login)
 /// </summary>
 public class DemandeConnexion
 {
@@ -17,16 +16,10 @@ public class DemandeConnexion
 
     #region Constructeurs
 
-    /// <summary>
-    /// Constructeur par défaut.
-    /// </summary>
     public DemandeConnexion()
     {
     }
 
-    /// <summary>
-    /// Constructeur avec identifiant et mot de passe.
-    /// </summary>
     public DemandeConnexion(string identifiant, string motDePasse)
     {
         this.identifiant = identifiant;
@@ -44,19 +37,6 @@ public class DemandeConnexion
         set => identifiant = value ?? "";
     }
 
-    /// <summary>
-    /// Alias JSON pour "email" afin de tolérer les deux conventions.
-    /// </summary>
-    [JsonProperty("email")]
-    private string? EmailSetter
-    {
-        set
-        {
-            if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(identifiant))
-                identifiant = value;
-        }
-    }
-
     [JsonProperty("password")]
     public string MotDePasse
     {
@@ -69,10 +49,12 @@ public class DemandeConnexion
     #region Methodes
 
     /// <summary>
-    /// Valide que les deux champs obligatoires sont renseignés.
+    /// Vérifie que l'identifiant et le mot de passe sont bien remplis
     /// </summary>
-    [JsonIgnore]
-    public bool EstValide => !string.IsNullOrWhiteSpace(Identifiant) && !string.IsNullOrWhiteSpace(MotDePasse);
+    public bool VerifierChamps()
+    {
+        return !string.IsNullOrWhiteSpace(Identifiant) && !string.IsNullOrWhiteSpace(MotDePasse);
+    }
 
     #endregion
 }

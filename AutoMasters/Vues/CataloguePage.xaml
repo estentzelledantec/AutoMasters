@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!-- x:Class relie ce fichier XAML à CataloguePage.xaml.cs -->
+<!-- x:DataType="vm:CatalogueVueModele" indique le ViewModel utilisé pour les Bindings -->
+<!-- Shell.NavBarIsVisible="False" masque la barre de titre par défaut en haut -->
 <ContentPage
     x:Class="AutoMasters.Vues.CataloguePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -10,10 +13,14 @@
     Title="Catalogue"
     Shell.NavBarIsVisible="False">
 
+    <!-- RowDefinitions="Auto,Auto,Auto,*,Auto" découpe la page en 5 lignes verticales : -->
+    <!-- Ligne 0 (Auto) : titre / Ligne 1 (Auto) : barre de recherche / Ligne 2 (Auto) : boutons de rareté -->
+    <!-- Ligne 3 (*) : prend toute la hauteur restante pour la grille de cartes / Ligne 4 (Auto) : pagination en bas -->
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="16,16,16,0">
 
-        <!-- 1. En-tête de la page -->
+        <!-- Ligne 0 : En-tête de la page -->
         <VerticalStackLayout Grid.Row="0" Spacing="4" Margin="0,0,0,12">
+            <!-- FontAttributes="Bold" : texte en gras / CharacterSpacing="1" : espace entre les lettres -->
             <Label
                 Text="CATALOGUE"
                 FontSize="24"
@@ -26,7 +33,8 @@
                 TextColor="#9CA3AF" />
         </VerticalStackLayout>
 
-        <!-- 2. Barre de recherche temps réel -->
+        <!-- Ligne 1 : Barre de recherche -->
+        <!-- Stroke : couleur de la bordure / StrokeThickness="1" : épaisseur de 1px / StrokeShape="RoundRectangle 12" : coins arrondis -->
         <Border
             Grid.Row="1"
             Stroke="#331A20"
@@ -35,6 +43,7 @@
             StrokeShape="RoundRectangle 12"
             Margin="0,0,0,12"
             Padding="4,0">
+            <!-- SearchBar : barre de recherche reliée à TexteRecherche dans le ViewModel -->
             <SearchBar
                 Placeholder="Rechercher une marque, un modèle..."
                 Text="{Binding TexteRecherche}"
@@ -46,11 +55,12 @@
                 SearchCommand="{Binding RechercherCommand}" />
         </Border>
 
-        <!-- 3. Sélecteur de rareté (Puces horizontales et Picker) -->
+        <!-- Ligne 2 : Boutons de filtre par rareté -->
+        <!-- Orientation="Horizontal" permet de faire défiler les boutons de gauche à droite / HorizontalScrollBarVisibility="Never" cache la barre de défilement -->
         <Grid Grid.Row="2" Margin="0,0,0,12">
             <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
                 <HorizontalStackLayout Spacing="8">
-                    <!-- Puce TOUTES -->
+                    <!-- CommandParameter envoie la rareté choisie ("TOUTES", "COMMUNE", etc.) à FiltrerParRareteCommand -->
                     <Button
                         Text="TOUTES"
                         Command="{Binding FiltrerParRareteCommand}"
@@ -134,7 +144,7 @@
                 SelectedItem="{Binding RareteSelectionnee}" />
         </Grid>
 
-        <!-- 4. Conteneur principal avec Tirer pour actualiser -->
+        <!-- RefreshView permet de recharger la liste en tirant l'écran vers le bas -->
         <RefreshView
             Grid.Row="3"
             IsRefreshing="{Binding EstEnActualisation}"
@@ -142,7 +152,7 @@
             RefreshColor="#E63946">
 
             <Grid>
-                <!-- Indicateur de chargement central -->
+                <!-- Roue de chargement affichée pendant que l'API répond -->
                 <ActivityIndicator
                     Color="#E63946"
                     IsRunning="{Binding EstOccupe}"
@@ -152,7 +162,7 @@
                     WidthRequest="48"
                     HeightRequest="48" />
 
-                <!-- CollectionView des cartes automobiles en grille 2 colonnes -->
+                <!-- CollectionView affiche la liste des voitures envoyée par le ViewModel -->
                 <CollectionView
                     ItemsSource="{Binding Cartes}"
                     SelectionMode="Single"
@@ -160,6 +170,7 @@
                     SelectionChangedCommand="{Binding SelectionnerCarteCommand}"
                     IsVisible="{Binding EstDisponible}">
 
+                    <!-- GridItemsLayout avec Span="2" permet d'afficher les cartes sur 2 colonnes -->
                     <CollectionView.ItemsLayout>
                         <GridItemsLayout
                             Orientation="Vertical"
@@ -168,6 +179,7 @@
                             VerticalItemSpacing="12" />
                     </CollectionView.ItemsLayout>
 
+                    <!-- DataTemplate définit le visuel d'une carte dans la grille -->
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="modeles:Carte">
                             <Border
@@ -177,6 +189,7 @@
                                 BackgroundColor="#1E293B"
                                 Padding="0">
 
+                                <!-- DataTrigger permet de changer automatiquement la couleur de la carte selon sa rareté -->
                                 <Border.Triggers>
                                     <DataTrigger TargetType="Border" Binding="{Binding Rarete}" Value="LÉGENDAIRE">
                                         <Setter Property="Stroke" Value="#F59E0B" />
@@ -196,20 +209,24 @@
                                     </DataTrigger>
                                 </Border.Triggers>
 
+                                <!-- TapGestureRecognizer rend la carte cliquable et envoie la voiture cliquée (Binding .) à la commande du ViewModel -->
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type vm:CatalogueVueModele}}, Path=SelectionnerCarteCommand}"
                                         CommandParameter="{Binding .}" />
                                 </Border.GestureRecognizers>
 
+                                <!-- Grille interne de la carte : 155px de hauteur pour la photo en haut, et Auto en bas pour le texte -->
                                 <Grid RowDefinitions="155,Auto">
-                                    <!-- 1. Photo du véhicule plus grande pour bien voir la voiture -->
+                                    <!-- Partie haute : photo de la voiture avec les badges par-dessus -->
+                                    <!-- RoundRectangle 17,17,0,0 : arrondit uniquement les 2 coins du haut de la photo -->
                                     <Grid Grid.Row="0">
                                         <Border
                                             StrokeThickness="0"
                                             StrokeShape="RoundRectangle 17,17,0,0"
                                             Padding="0"
                                             BackgroundColor="#201518">
+                                            <!-- Aspect="AspectFill" : remplit tout l'espace de 155px sans écraser l'image -->
                                             <Image
                                                 Source="{Binding ImageUrl}"
                                                 Aspect="AspectFill"
@@ -217,7 +234,7 @@
                                                 VerticalOptions="Fill" />
                                         </Border>
 
-                                        <!-- Badge Rareté en haut à gauche en pur XAML -->
+                                        <!-- Badge de rareté (HorizontalOptions="Start" et VerticalOptions="Start" le placent en haut à gauche) -->
                                         <Border
                                             StrokeThickness="0"
                                             BackgroundColor="#64748B"
@@ -244,7 +261,7 @@
                                                 TextColor="#10080B" />
                                         </Border>
 
-                                        <!-- Badge Année discret en haut à droite -->
+                                        <!-- Badge Année (HorizontalOptions="End" et VerticalOptions="Start" le placent en haut à droite) -->
                                         <Border
                                             StrokeThickness="0"
                                             BackgroundColor="#B310080B"
@@ -261,7 +278,7 @@
                                         </Border>
                                     </Grid>
 
-                                    <!-- 2. Bandeau d'informations compact en bas de la carte -->
+                                    <!-- Partie basse : marque, puissance, modèle et prix (LineBreakMode="TailTruncation" coupe avec "..." si le nom dépasse) -->
                                     <VerticalStackLayout Grid.Row="1" Padding="10,7,10,9" Spacing="2">
                                         <!-- Marque et Modèle répartis proprement -->
                                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">

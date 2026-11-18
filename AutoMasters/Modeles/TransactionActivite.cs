@@ -4,8 +4,7 @@ using Newtonsoft.Json;
 namespace AutoMasters.Modeles;
 
 /// <summary>
-/// Modèle représentant un événement d'activité ou une transaction du joueur (GET /transactions, GET /notifications, POST /gifts).
-/// Respecte strictement la structure de régions BTS SIO SLAM 2ème année.
+/// Classe qui représente une ligne dans l'historique des activités du joueur
 /// </summary>
 public class TransactionActivite
 {
@@ -24,16 +23,10 @@ public class TransactionActivite
 
     #region Constructeurs
 
-    /// <summary>
-    /// Constructeur par défaut requis pour la désérialisation Newtonsoft.Json.
-    /// </summary>
     public TransactionActivite()
     {
     }
 
-    /// <summary>
-    /// Constructeur complet d'initialisation d'une activité.
-    /// </summary>
     public TransactionActivite(string identifiant, string typeOperation, string titre, string description, decimal montant, string icone = "⚡", DateTime? dateOperation = null, string utilisateur = "")
     {
         this.identifiant = identifiant;
@@ -92,16 +85,6 @@ public class TransactionActivite
         set => montant = value;
     }
 
-    [JsonProperty("price")]
-    private decimal? PriceSetter
-    {
-        set
-        {
-            if (value.HasValue && montant == 0)
-                montant = value.Value;
-        }
-    }
-
     [JsonProperty("createdAt")]
     public DateTime DateOperation
     {
@@ -109,7 +92,6 @@ public class TransactionActivite
         set => dateOperation = value;
     }
 
-    [JsonIgnore]
     public string Icone
     {
         get => icone;
@@ -120,18 +102,14 @@ public class TransactionActivite
 
     #region Methodes
 
-    [JsonIgnore]
     public string SousTitre => description;
 
-    [JsonIgnore]
     public bool EstPositif => montant >= 0;
 
-    [JsonIgnore]
     public string MontantFormate => montant != 0
-        ? $"{(montant > 0 ? "+" : "")}{montant:N0} coins"
+        ? $"{(montant > 0 ? "+" : "")}{montant:N0} €"
         : "Opération confirmée";
 
-    [JsonIgnore]
     public string MontantJetonsFormate
     {
         get
@@ -145,12 +123,11 @@ public class TransactionActivite
         }
     }
 
-    [JsonIgnore]
     public string DateFormatee => dateOperation.ToString("dd/MM/yyyy HH:mm");
 
     public override string ToString()
     {
-        return $"[{TypeOperation}] {Titre} - {MontantFormate}";
+        return $"[{TypeOperation}] {Titre} - {MontantJetonsFormate}";
     }
 
     #endregion

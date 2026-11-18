@@ -13,11 +13,7 @@ using Microsoft.Maui.Controls;
 namespace AutoMasters.VuesModeles;
 
 /// <summary>
-/// ViewModel gérant le Garage personnel du collectionneur, le Patrimoine, le Portefeuille en Jetons
-/// et le déclencheur de boosters (Features F25, F26).
-/// Gère la valorisation du Patrimoine en Jetons (Prix Réel / 1 000) et en Euros, le Portefeuille liquide en Jetons,
-/// le P&L net coloré, le quota de boosters ("3/3 disponibles" avec recharge de +1 toutes les 30 minutes),
-/// la vente directe contre des Jetons et l'ouverture du modal booster de 3 cartes.
+/// ViewModel de la page du Garage personnel du joueur
 /// </summary>
 public partial class GarageVueModele : ObservableObject
 {
@@ -118,7 +114,6 @@ public partial class GarageVueModele : ObservableObject
     /// <summary>
     /// Constructeur avec injection du service HTTP.
     /// </summary>
-    /// <param name="serviceApi">Instance de ServiceAPI.</param>
     public GarageVueModele(ServiceAPI? serviceApi)
     {
         this.serviceApi = serviceApi ?? ServiceAPI.Instance;
@@ -160,7 +155,7 @@ public partial class GarageVueModele : ObservableObject
     public bool EstEnGain => TotalGainPerte >= 0;
 
     /// <summary>
-    /// Format strict validé par les tests F25_03, F25_B02 (+32 500 € P&L total) et F25_B03 (-2 000 € P&L total).
+    /// Affiche le gain ou la perte totale sur le garage
     /// </summary>
     public string TotalGainPerteFormate => $"{(EstEnGain ? "+" : "")}{TotalGainPerte:N0} € P&L total";
 
@@ -283,9 +278,7 @@ public partial class GarageVueModele : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Permet de changer directement de page lorsque l'utilisateur saisit un numéro de page.
-    /// </summary>
+    // Permet de changer directement de page lorsque l'utilisateur saisit un numéro de page.
     partial void OnSaisiePageChanged(string value)
     {
         if (int.TryParse(value?.Trim(), out int numeroPage))
@@ -364,7 +357,7 @@ public partial class GarageVueModele : ObservableObject
     }
 
     /// <summary>
-    /// Lance l'ouverture d'un booster et affiche la modale de révélation interactive uniquement après succès (F26, F32).
+    /// Ouvre un booster de 3 cartes et affiche la fenêtre de découverte
     /// </summary>
     [RelayCommand]
     public async Task OuvrirBoosterAsync()
@@ -502,7 +495,7 @@ public partial class GarageVueModele : ObservableObject
     }
 
     /// <summary>
-    /// Retire l'annonce de vente active d'un véhicule du garage afin qu'il redevienne libre (EF032).
+    /// Permet de retirer une voiture de la vente pour qu'elle redevienne disponible dans le garage
     /// </summary>
     [RelayCommand]
     public async Task RetirerVenteCarteAsync(CartePossedee? exemplaire)
@@ -519,8 +512,7 @@ public partial class GarageVueModele : ObservableObject
     }
 
     /// <summary>
-    /// Vend immédiatement la voiture sélectionnée du Garage contre sa valeur en Jetons (Prix / 1 000).
-    /// Les Jetons sont crédités dans le Portefeuille liquide pour acheter des voitures sur le Marché.
+    /// Permet de vendre directement une voiture du garage contre sa valeur en jetons
     /// </summary>
     [RelayCommand]
     public async Task VendreCarteDirecteAsync(CartePossedee? carte)
@@ -564,9 +556,8 @@ public partial class GarageVueModele : ObservableObject
     }
 
     /// <summary>
-    /// Offre un exemplaire possédé à un autre compte étudiant (Alice, Bob ou Charlie) conformément à la règle RM009 et l'exigence EF060.
+    /// Permet d'offrir une voiture du garage en cadeau à un autre joueur (Alice, Bob ou Charlie)
     /// </summary>
-    /// <param name="exemplaire">Exemplaire de voiture à offrir en cadeau.</param>
     [RelayCommand]
     public async Task OffrirCarteAsync(CartePossedee? exemplaire)
     {
@@ -577,7 +568,7 @@ public partial class GarageVueModele : ObservableObject
         if (pageActive == null)
             return;
 
-        // Règle EF061 : empêcher le don si la carte est actuellement sur le marché
+        // On vérifie que la voiture n'est pas déjà en vente sur le marché
         if (serviceApi.ExemplaireEstEnVente(exemplaire))
         {
             await pageActive.DisplayAlertAsync(
@@ -603,9 +594,8 @@ public partial class GarageVueModele : ObservableObject
 
         string destinataire = action.ToLowerInvariant();
 
-        // Écran de confirmation obligatoire selon l'exigence EF060 du cahier des charges
         bool confirmer = await pageActive.DisplayAlertAsync(
-            "Confirmation du cadeau (RM009)",
+            "Confirmation du cadeau",
             $"Confirmez-vous le don de votre {exemplaire.Carte?.NomComplet} à {action.ToUpper()} ?\n\nCe transfert est définitif et sans contrepartie financière.",
             "Offrir la voiture",
             "Annuler");

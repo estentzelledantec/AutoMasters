@@ -3,14 +3,14 @@ using Newtonsoft.Json;
 namespace AutoMasters.Modeles;
 
 /// <summary>
-/// Classe représentant une carte de voiture dans le catalogue (API du Groupe 2).
+/// Classe qui représente une carte de voiture dans le catalogue
 /// </summary>
 public class Carte
 {
     #region Attributs
 
     /// <summary>
-    /// Taux de conversion entre le prix réel en euros et les jetons (1 jeton = 1 000 €).
+    /// 1 jeton dans l'application équivaut à 1 000 €
     /// </summary>
     public const decimal TauxConversionJeton = 1000m;
 
@@ -35,16 +35,10 @@ public class Carte
 
     #region Constructeurs
 
-    /// <summary>
-    /// Constructeur par défaut requis pour la désérialisation Newtonsoft.Json.
-    /// </summary>
     public Carte()
     {
     }
 
-    /// <summary>
-    /// Constructeur complet avec paramètres.
-    /// </summary>
     public Carte(
         string identifiant,
         string marque,
@@ -79,6 +73,7 @@ public class Carte
 
     #region Getter/Setter
 
+    // [JsonProperty] permet de faire le lien entre le nom du champ en anglais dans le JSON de l'API et notre propriété C#
     [JsonProperty("id")]
     public string Identifiant
     {
@@ -136,23 +131,10 @@ public class Carte
     }
 
     /// <summary>
-    /// Alias JSON pour le champ "price" direct (ex: requêtes admin/API).
-    /// </summary>
-    [JsonProperty("price")]
-    private decimal? PriceAliasSetter
-    {
-        set
-        {
-            if (value.HasValue && value.Value > 0 && prixOfficiel <= 0)
-                prixOfficiel = value.Value;
-        }
-    }
-
-    /// <summary>
-    /// Alias JSON pour l'objet "quote" renvoyé par GET /cards sur l'API Groupe 2 (RM001).
+    /// Lecture du sous-objet "quote" renvoyé par l'API pour récupérer le prix, la variation et la date
     /// </summary>
     [JsonProperty("quote")]
-    private Newtonsoft.Json.Linq.JObject? QuoteAliasSetter
+    private Newtonsoft.Json.Linq.JObject? CotationApi
     {
         set
         {
@@ -185,21 +167,18 @@ public class Carte
         }
     }
 
-    [JsonIgnore]
     public decimal VariationCours
     {
         get => variationCours;
         set => variationCours = value;
     }
 
-    [JsonIgnore]
     public string DeviseCours
     {
         get => deviseCours;
         set => deviseCours = string.IsNullOrWhiteSpace(value) ? "EUR" : value;
     }
 
-    [JsonIgnore]
     public string HorodatageCours
     {
         get => horodatageCours;
@@ -213,11 +192,8 @@ public class Carte
         set => exemplairesEnCirculation = value;
     }
 
-    /// <summary>
-    /// Alias JSON pour le champ "circulation" renvoyé par GET /cards sur l'API Groupe 2.
-    /// </summary>
     [JsonProperty("circulation")]
-    private int? CirculationAliasSetter
+    private int? CirculationApi
     {
         set
         {
@@ -259,42 +235,21 @@ public class Carte
     #region Methodes
 
     /// <summary>
-    /// Nom complet formaté combinant marque, modèle et variante si disponible.
+    /// Affiche la marque, le modèle et la variante
     /// </summary>
-    [JsonIgnore]
     public string NomComplet => string.IsNullOrWhiteSpace(Variante)
         ? $"{Marque} {Modele}"
         : $"{Marque} {Modele} ({Variante})";
 
-    /// <summary>
-    /// Puissance formatée avec unité (ex: "525 ch").
-    /// </summary>
-    [JsonIgnore]
     public string PuissanceFormatee => $"{Puissance} ch";
 
-    /// <summary>
-    /// Vitesse maximale formatée (ex: "296 km/h").
-    /// </summary>
-    [JsonIgnore]
     public string VitesseMaxFormatee => $"{VitesseMax} km/h";
 
-    /// <summary>
-    /// Accélération 0 à 100 km/h formatée (ex: "3.2 s").
-    /// </summary>
-    [JsonIgnore]
     public string ZeroACentFormate => $"{ZeroACent:F1} s";
 
     /// <summary>
-    /// Cours / prix officiel formaté avec séparateur de milliers et unité (ex: "223 000 coins").
-    /// Conservé pour la compatibilité avec les tests unitaires existants.
+    /// Affiche le prix en euros (ex : 165 000 €)
     /// </summary>
-    [JsonIgnore]
-    public string PrixOfficielFormate => $"{PrixOfficiel:N0} coins";
-
-    /// <summary>
-    /// Prix réel de la voiture en euros tel que renvoyé par l'API (ex: "100 000 €" ou "42 066,59 €").
-    /// </summary>
-    [JsonIgnore]
     public string PrixReelFormate
     {
         get
@@ -309,9 +264,8 @@ public class Carte
     }
 
     /// <summary>
-    /// Variation du cours en direct formatée (ex: "▲ +0,81 %" ou "▼ -1,38 %").
+    /// Affiche le pourcentage de variation avec une flèche (▲ ou ▼)
     /// </summary>
-    [JsonIgnore]
     public string VariationCoursFormatee
     {
         get
@@ -325,41 +279,23 @@ public class Carte
         }
     }
 
-    /// <summary>
-    /// Indique si la variation du cours est positive ou nulle (utilisé par les DataTriggers XAML).
-    /// </summary>
-    [JsonIgnore]
     public bool EstVariationPositive => VariationCours >= 0;
 
-    /// <summary>
-    /// Horodatage officiel de la dernière cotation reçue du serveur (Règle métier RM001).
-    /// </summary>
-    [JsonIgnore]
     public string HorodatageCoursFormate => string.IsNullOrWhiteSpace(HorodatageCours)
         ? $"Dernière cotation serveur : {System.DateTime.Now:dd/MM/yyyy à HH:mm:ss}"
         : $"Dernière cotation serveur : {HorodatageCours}";
 
     /// <summary>
-    /// Valeur proportionnelle de la voiture en jetons de l'application (Prix réel / 1000).
-    /// Exemple : 100 000 € = 100 jetons, 35 000 € = 35 jetons, 25 250 € = 25,25 jetons.
+    /// Calcule la valeur en jetons (Prix / 1 000)
     /// </summary>
-    [JsonIgnore]
     public decimal ValeurJetons => System.Math.Round(PrixOfficiel / 1000m, 2);
 
-    /// <summary>
-    /// Valeur en jetons formatée proprement en français (ex: "100 Jetons", "35 Jetons", "25,25 Jetons").
-    /// </summary>
-    [JsonIgnore]
     public string ValeurJetonsFormatee => FormaterMontantJetons(ValeurJetons);
 
-    /// <summary>
-    /// Double affichage combinant le prix réel en euros et la valeur en jetons (ex: "35 000 € · 35 Jetons").
-    /// </summary>
-    [JsonIgnore]
     public string PrixCompletFormate => $"{PrixReelFormate} · {ValeurJetonsFormatee}";
 
     /// <summary>
-    /// Formate un montant de jetons avec 0 décimale s'il est entier, ou 2 décimales sinon (ex: 25,25 Jetons).
+    /// Formate un montant en jetons (sans virgule si c'est un nombre rond)
     /// </summary>
     public static string FormaterMontantJetons(decimal jetons)
     {
@@ -372,9 +308,8 @@ public class Carte
     }
 
     /// <summary>
-    /// Code court de la rareté affiché en haut à gauche de la carte ("UR", "SR", "R", "C").
+    /// Renvoie le code court de rareté (UR, SR, R, C) pour le badge sur la carte
     /// </summary>
-    [JsonIgnore]
     public string BadgeRareteCourt
     {
         get
@@ -392,25 +327,9 @@ public class Carte
         }
     }
 
-    /// <summary>
-    /// Sous-titre regroupant la variante et l'année de la voiture.
-    /// </summary>
-    [JsonIgnore]
     public string SousTitreCarte => !string.IsNullOrWhiteSpace(Variante)
         ? $"{Variante} · {Annee}"
         : $"Modèle {Annee} · {Puissance} ch";
-
-    /// <summary>
-    /// Valeur calculée à partir de la puissance (conservée pour compatibilité avec les tests).
-    /// </summary>
-    [JsonIgnore]
-    public int ScoreAttaque => Puissance > 0 ? Puissance * 10 : 500;
-
-    /// <summary>
-    /// Valeur calculée à partir de la vitesse maximale (conservée pour compatibilité avec les tests).
-    /// </summary>
-    [JsonIgnore]
-    public int ScoreDefense => VitesseMax > 0 ? VitesseMax * 25 : 5000;
 
     public override string ToString()
     {
@@ -421,7 +340,7 @@ public class Carte
 }
 
 /// <summary>
-/// Représente un point d'historique de cotation boursière d'une voiture renvoyé par GET /cards/{id}/quotes (RM001).
+/// Classe qui représente un point de la courbe de marché d'une voiture
 /// </summary>
 public class PointCotationMarche
 {
@@ -473,7 +392,6 @@ public class PointCotationMarche
         set => horodatage = value ?? "";
     }
 
-    [JsonIgnore]
     public double HauteurBarre
     {
         get => hauteurBarre;
@@ -484,7 +402,6 @@ public class PointCotationMarche
 
     #region Methodes
 
-    [JsonIgnore]
     public string PrixFormate
     {
         get
@@ -496,7 +413,6 @@ public class PointCotationMarche
         }
     }
 
-    [JsonIgnore]
     public string VariationFormatee
     {
         get
@@ -508,10 +424,8 @@ public class PointCotationMarche
         }
     }
 
-    [JsonIgnore]
     public bool EstEnHausse => Variation >= 0;
 
-    [JsonIgnore]
     public string HeureCourte
     {
         get

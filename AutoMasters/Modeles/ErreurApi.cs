@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 namespace AutoMasters.Modeles;
 
 /// <summary>
-/// DTO représentant le format normalisé des réponses d'erreur renvoyées par l'API Group 2.
+/// Classe permettant de lire les messages d'erreur renvoyés en JSON par l'API
 /// </summary>
 public class ErreurApi
 {
@@ -21,16 +21,10 @@ public class ErreurApi
 
     #region Constructeurs
 
-    /// <summary>
-    /// Constructeur par défaut.
-    /// </summary>
     public ErreurApi()
     {
     }
 
-    /// <summary>
-    /// Constructeur avec message et code d'erreur.
-    /// </summary>
     public ErreurApi(string message, string? code = null, string? correlationId = null)
     {
         this.message = message;
@@ -50,10 +44,7 @@ public class ErreurApi
     }
 
     /// <summary>
-    /// Message d'erreur principal. Résout avec priorité la clé standard "message",
-    /// puis les clés alternatives "detail" (RFC 7807), "error" (standard REST) ou "title" (RFC 7807).
-    /// Renvoie null si aucun message textuel valide n'est présent afin de ne jamais masquer
-    /// les messages de fallback dans les services appelants.
+    /// Récupère le message d'erreur quel que soit le nom du champ dans le JSON
     /// </summary>
     [JsonProperty("message")]
     public string? Message
@@ -73,9 +64,6 @@ public class ErreurApi
         set => message = value;
     }
 
-    /// <summary>
-    /// Clé d'erreur alternative (ex: OAuth, microservices Flask/Express).
-    /// </summary>
     [JsonProperty("error")]
     public string? Error
     {
@@ -83,9 +71,6 @@ public class ErreurApi
         set => error = value;
     }
 
-    /// <summary>
-    /// Clé d'erreur alternative Problem Details RFC 7807 fournissant l'explication détaillée.
-    /// </summary>
     [JsonProperty("detail")]
     public string? Detail
     {
@@ -93,9 +78,6 @@ public class ErreurApi
         set => detail = value;
     }
 
-    /// <summary>
-    /// Clé d'erreur alternative Problem Details RFC 7807 fournissant le résumé court ou titre.
-    /// </summary>
     [JsonProperty("title")]
     public string? Title
     {
@@ -121,9 +103,6 @@ public class ErreurApi
 
     #region Methodes
 
-    /// <summary>
-    /// Format lisible pour affichage dans une alerte ou un bandeau d'erreur utilisateur.
-    /// </summary>
     public override string ToString()
     {
         string? msg = Message;

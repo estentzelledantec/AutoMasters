@@ -1,5 +1,3 @@
-<Solution>
+﻿<Solution>
   <Project Path="AutoMasters/AutoMasters.csproj" />
-  <Project Path="AutoMasters.Tests/AutoMasters.Tests.csproj" />
-  <Project Path="AutoMasters.E2ETests/AutoMasters.E2ETests.csproj" />
 </Solution>

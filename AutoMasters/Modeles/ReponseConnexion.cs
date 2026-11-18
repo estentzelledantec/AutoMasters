@@ -3,8 +3,7 @@ using Newtonsoft.Json;
 namespace AutoMasters.Modeles;
 
 /// <summary>
-/// DTO représentant la réponse à une demande d'authentification réussie (POST /auth/login, POST /auth/refresh).
-/// Contient le jeton JWT d'accès et facultativement le jeton de rafraîchissement.
+/// Classe qui récupère la réponse de l'API après une connexion réussie
 /// </summary>
 public class ReponseConnexion
 {
@@ -18,16 +17,10 @@ public class ReponseConnexion
 
     #region Constructeurs
 
-    /// <summary>
-    /// Constructeur par défaut.
-    /// </summary>
     public ReponseConnexion()
     {
     }
 
-    /// <summary>
-    /// Constructeur avec jeton d'accès.
-    /// </summary>
     public ReponseConnexion(string jetonAcces, string? jetonRafraichissement = null, DateTime? dateExpiration = null)
     {
         this.jetonAcces = jetonAcces;
@@ -44,19 +37,6 @@ public class ReponseConnexion
     {
         get => jetonAcces;
         set => jetonAcces = value ?? "";
-    }
-
-    /// <summary>
-    /// Alias JSON pour "token" si l'API ou le mock retourne cette clé.
-    /// </summary>
-    [JsonProperty("token")]
-    private string? TokenSetter
-    {
-        set
-        {
-            if (!string.IsNullOrWhiteSpace(value) && string.IsNullOrWhiteSpace(jetonAcces))
-                jetonAcces = value;
-        }
     }
 
     [JsonProperty("refreshToken")]
@@ -78,9 +58,8 @@ public class ReponseConnexion
     #region Methodes
 
     /// <summary>
-    /// Vérifie si le jeton est présent et non expiré (avec marge de sécurité de 30 secondes).
+    /// Vérifie si le token est présent et pas encore expiré
     /// </summary>
-    [JsonIgnore]
     public bool EstValide
     {
         get

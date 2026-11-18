@@ -12,9 +12,7 @@ using Microsoft.Maui.Controls;
 namespace AutoMasters.VuesModeles;
 
 /// <summary>
-/// ViewModel gérant la création et publication d'une offre de vente sur le marché (Feature F24).
-/// Permet la sélection d'un véhicule du garage, la saisie et validation stricte du prix demandé (> 0),
-/// et l'envoi vers POST /offers.
+/// ViewModel permettant de mettre en vente une voiture du garage sur le marché
 /// </summary>
 [QueryProperty(nameof(ExemplairePreselectionne), "exemplaire")]
 public partial class CreationOffreVueModele : ObservableObject
@@ -59,7 +57,6 @@ public partial class CreationOffreVueModele : ObservableObject
     /// <summary>
     /// Constructeur avec injection du service HTTP.
     /// </summary>
-    /// <param name="serviceApi">Instance de ServiceAPI.</param>
     public CreationOffreVueModele(ServiceAPI? serviceApi)
     {
         this.serviceApi = serviceApi ?? ServiceAPI.Instance;
@@ -129,7 +126,7 @@ public partial class CreationOffreVueModele : ObservableObject
     }
 
     /// <summary>
-    /// Valide les informations saisies et publie l'offre sur le marché numérique (F24_03, F24_B02, F24_B03).
+    /// Vérifie le prix saisi en jetons et publie l'annonce sur le marché
     /// </summary>
     [RelayCommand]
     public async Task CreerOffreAsync()
@@ -139,14 +136,12 @@ public partial class CreationOffreVueModele : ObservableObject
 
         MessageErreur = "";
 
-        // 1. Validation de la sélection du véhicule (F24_01)
         if (CarteSelectionnee == null)
         {
             MessageErreur = "Veuillez sélectionner un véhicule de votre garage.";
             return;
         }
 
-        // 2. Nettoyage et validation du format du prix (support virgules et espaces, F24_B02, F24_B03)
         string prixNettoye = (PrixSaisi ?? string.Empty).Replace(" ", string.Empty).Replace(',', '.');
         if (!decimal.TryParse(prixNettoye, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal prixFinal))
         {
@@ -154,7 +149,6 @@ public partial class CreationOffreVueModele : ObservableObject
             return;
         }
 
-        // 3. Validation stricte du prix > 0 (F24_03, RM001)
         if (prixFinal <= 0)
         {
             MessageErreur = "Le prix de vente doit être strictement supérieur à zéro.";

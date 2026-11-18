@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!-- x:Class relie cette vue à ConnexionPage.xaml.cs -->
+<!-- x:DataType="vm:ConnexionVueModele" indique le ViewModel utilisé pour les Bindings -->
+<!-- BackgroundColor="#10080B" définit la couleur de fond sombre de la page -->
+<!-- Shell.NavBarIsVisible="False" masque la barre de navigation du haut sur l'écran de connexion -->
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
@@ -9,7 +13,13 @@
     Shell.NavBarIsVisible="False"
     Title="Connexion">
 
+    <!-- ScrollView permet de faire défiler la page si l'écran est trop petit -->
     <ScrollView>
+        <!-- VerticalStackLayout empile les éléments verticalement les uns sous les autres -->
+        <!-- Padding="28,40" ajoute une marge intérieure (28 à gauche/droite, 40 en haut/bas) -->
+        <!-- Spacing="18" laisse un espace de 18 pixels entre chaque élément -->
+        <!-- VerticalOptions="Center" et HorizontalOptions="Center" centrent le bloc au milieu de l'écran -->
+        <!-- MaximumWidthRequest="420" limite la largeur maximale du formulaire sur PC -->
         <VerticalStackLayout
             Padding="28,40"
             Spacing="18"
@@ -17,7 +27,13 @@
             MaximumWidthRequest="420"
             HorizontalOptions="Center">
 
-            <!-- 1. BADGE LOGO AUTOMASTERS SQUIRCLE FIGMA -->
+            <!-- Logo AutoMasters -->
+            <!-- Stroke="#E63946" : couleur rouge de la bordure -->
+            <!-- StrokeThickness="2" : épaisseur de la bordure (2 pixels) -->
+            <!-- WidthRequest="72" et HeightRequest="72" : largeur et hauteur du carré (72x72 pixels) -->
+            <!-- HorizontalOptions="Center" : centre le cadre horizontalement -->
+            <!-- StrokeShape="RoundRectangle 16" : arrondit les 4 coins avec un rayon de 16 -->
+            <!-- BackgroundColor="#221215" : couleur de fond à l'intérieur du cadre -->
             <Border
                 Stroke="#E63946"
                 StrokeThickness="2"
@@ -26,6 +42,7 @@
                 HorizontalOptions="Center"
                 StrokeShape="RoundRectangle 16"
                 BackgroundColor="#221215">
+                <!-- FontSize="34" : taille de l'icône, centrée horizontalement et verticalement dans le cadre -->
                 <Label
                     Text="🏎️"
                     FontSize="34"
@@ -33,7 +50,11 @@
                     VerticalOptions="Center" />
             </Border>
 
-            <!-- 2. TITRE BI-COLORE & SOUS-TITRE FIGMA -->
+            <!-- Titre de l'application -->
+            <!-- HorizontalTextAlignment="Center" : centre le texte -->
+            <!-- CharacterSpacing="2" : espace légèrement les lettres entre elles -->
+            <!-- FormattedString avec plusieurs Span permet d'écrire AUTO en blanc et MASTERS en rouge dans le même Label -->
+            <!-- FontAttributes="Bold" : met le texte en gras -->
             <Label HorizontalTextAlignment="Center" CharacterSpacing="2">
                 <Label.FormattedText>
                     <FormattedString>
@@ -44,6 +65,8 @@
                 </Label.FormattedText>
             </Label>
 
+            <!-- Sous-titre de la page -->
+            <!-- Margin="0,-8,0,12" : marge extérieure (rapproche le texte du titre en haut de 8px et laisse 12px en bas) -->
             <Label
                 Text="Collecte · Échange · Compétition"
                 FontSize="12"
@@ -52,7 +75,7 @@
                 HorizontalTextAlignment="Center"
                 Margin="0,-8,0,12" />
 
-            <!-- 3. FORMULAIRE : IDENTIFIANT -->
+            <!-- Champ de saisie de l'identifiant -->
             <VerticalStackLayout Spacing="6">
                 <Label
                     Text="IDENTIFIANT"
@@ -60,6 +83,7 @@
                     FontAttributes="Bold"
                     TextColor="#A0A0A0"
                     CharacterSpacing="1" />
+                <!-- Border qui entoure la zone de texte (Entry) avec une bordure fine (StrokeThickness="1") et des coins arrondis (RoundRectangle 10) -->
                 <Border
                     Stroke="#331A20"
                     StrokeThickness="1"
@@ -67,6 +91,9 @@
                     StrokeShape="RoundRectangle 10"
                     HeightRequest="50"
                     Padding="14,0">
+                    <!-- Entry : zone de saisie reliée à la propriété Identifiant du ViewModel (Text="{Binding Identifiant}") -->
+                    <!-- Placeholder : texte d'aide affiché en gris tant que le champ est vide -->
+                    <!-- ClearButtonVisibility="WhileEditing" : affiche une petite croix pour effacer le texte pendant la saisie -->
                     <Entry
                         Text="{Binding Identifiant}"
                         Placeholder="Identifiant (ex: alice)"
@@ -78,7 +105,7 @@
                 </Border>
             </VerticalStackLayout>
 
-            <!-- 4. FORMULAIRE : MOT DE PASSE -->
+            <!-- Champ de saisie du mot de passe -->
             <VerticalStackLayout Spacing="6">
                 <Label
                     Text="MOT DE PASSE"
@@ -93,6 +120,7 @@
                     StrokeShape="RoundRectangle 10"
                     HeightRequest="50"
                     Padding="14,0">
+                    <!-- IsPassword="True" : remplace les caractères tapés par des points pour cacher le mot de passe -->
                     <Entry
                         Text="{Binding MotDePasse}"
                         Placeholder="••••••••••••"
@@ -104,7 +132,10 @@
                 </Border>
             </VerticalStackLayout>
 
-            <!-- 6. BOUTON PRINCIPAL SE CONNECTER -->
+            <!-- Bouton de connexion -->
+            <!-- CornerRadius="12" : arrondit les angles du bouton -->
+            <!-- IsEnabled="{Binding EstDisponible}" : désactive le bouton pendant que la connexion est en cours -->
+            <!-- Command="{Binding SeConnecterCommand}" : exécute la méthode SeConnecterAsync() du ViewModel au clic -->
             <Button
                 Text="SE CONNECTER"
                 FontAttributes="Bold"
@@ -116,13 +147,17 @@
                 IsEnabled="{Binding EstDisponible}"
                 Command="{Binding SeConnecterCommand}" />
 
-            <!-- 8. INDICATEUR DE CHARGEMENT ET BANDEAU D'ERREUR -->
+            <!-- ActivityIndicator : roue de chargement animée -->
+            <!-- IsRunning et IsVisible="{Binding EstOccupe}" : tourne et s'affiche uniquement pendant l'appel à l'API -->
             <ActivityIndicator
                 Color="#E63946"
                 IsRunning="{Binding EstOccupe}"
                 IsVisible="{Binding EstOccupe}"
                 HeightRequest="36" />
 
+            <!-- Message d'erreur -->
+            <!-- LineBreakMode="WordWrap" : renvoie automatiquement le texte à la ligne s'il est long -->
+            <!-- IsVisible="{Binding AUnMessage}" : n'affiche ce Label que s'il y a un message d'erreur -->
             <Label
                 Text="{Binding Message}"
                 TextColor="#E63946"

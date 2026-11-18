@@ -12,9 +12,7 @@ using Microsoft.Maui.Controls;
 namespace AutoMasters.VuesModeles;
 
 /// <summary>
-/// Vue-modèle de la page du Marché (Fonctionnalités F22 et F23).
-/// Permet d'afficher les offres de vente, de filtrer par recherche ou par rareté,
-/// d'acheter ou de réserver une voiture et de consulter sa fiche détaillée.
+/// ViewModel de la page du Marché des voitures
 /// </summary>
 public partial class MarcheVueModele : ObservableObject
 {
@@ -90,7 +88,6 @@ public partial class MarcheVueModele : ObservableObject
     /// <summary>
     /// Constructeur avec injection du service HTTP.
     /// </summary>
-    /// <param name="serviceApi">Instance de ServiceAPI.</param>
     public MarcheVueModele(ServiceAPI? serviceApi)
     {
         this.serviceApi = serviceApi ?? ServiceAPI.Instance;
@@ -105,7 +102,7 @@ public partial class MarcheVueModele : ObservableObject
     public bool EstDisponible => !EstOccupe;
 
     /// <summary>
-    /// Alias de compatibilité pour la collection d'offres.
+    /// Liste des offres actuellement affichées sur la page
     /// </summary>
     public ObservableCollection<Offre> Offres => OffresFiltrees;
 
@@ -152,17 +149,13 @@ public partial class MarcheVueModele : ObservableObject
 
     #region Methodes
 
-    /// <summary>
-    /// Réagit au changement de texte de recherche.
-    /// </summary>
+    // Réagit au changement de texte de recherche.
     partial void OnTexteRechercheChanged(string value)
     {
         AppliquerFiltres();
     }
 
-    /// <summary>
-    /// Réagit au changement de filtre de rareté.
-    /// </summary>
+    // Réagit au changement de filtre de rareté.
     partial void OnFiltreRareteChanged(string value)
     {
         AppliquerFiltres();
@@ -196,7 +189,7 @@ public partial class MarcheVueModele : ObservableObject
             }
             catch
             {
-                // Conserve le solde par défaut lors des tests unitaires isolés
+                // Ignore en cas d'erreur de récupération du solde
             }
         }
         catch (Exception ex)
@@ -250,9 +243,7 @@ public partial class MarcheVueModele : ObservableObject
         MettreAJourPageOffres();
     }
 
-    /// <summary>
-    /// Permet de changer directement de page lorsque l'utilisateur saisit un numéro de page.
-    /// </summary>
+    // Permet de changer directement de page lorsque l'utilisateur saisit un numéro de page.
     partial void OnSaisiePageChanged(string value)
     {
         if (int.TryParse(value?.Trim(), out int numeroPage))
@@ -341,7 +332,7 @@ public partial class MarcheVueModele : ObservableObject
     }
 
     /// <summary>
-    /// Exécute l'achat immédiat d'une offre avec boîte récapitulative de confirmation (Feature F23 / RM006).
+    /// Permet d'acheter une voiture mise en vente sur le marché
     /// </summary>
     [RelayCommand]
     public async Task AcheterOffreAsync(Offre? offre)
@@ -365,23 +356,22 @@ public partial class MarcheVueModele : ObservableObject
         EstOccupe = true;
         try
         {
-            // Contrôle de solde utilisateur préalable (F22_B04)
+            // Vérification que le joueur a assez de jetons dans son portefeuille
             if (SoldeUtilisateur < offre.Prix)
             {
-                Message = $"Fonds insuffisants : vous possédez {SoldeUtilisateur:N0} coins mais ce véhicule coûte {offre.Prix:N0} coins.";
+                Message = $"Fonds insuffisants : vous possédez {SoldeJetonsFormate} mais ce véhicule coûte {offre.ValeurJetonsFormatee}.";
                 if (Application.Current?.Windows.Count > 0 && Application.Current.Windows[0].Page != null)
                 {
                     await Application.Current.Windows[0].Page!.DisplayAlertAsync(
                         "Fonds insuffisants",
-                        $"Vous possédez {SoldeUtilisateur:N0} coins, mais cette offre coûte {offre.Prix:N0} coins.",
+                        $"Vous possédez {SoldeJetonsFormate}, mais cette voiture coûte {offre.ValeurJetonsFormatee}.",
                         "Fermer");
                 }
                 return;
             }
 
-            // Dialogue récapitulatif de confirmation (F23_01, F23_02)
             string nomVehicule = $"{offre.Carte?.Marque} {offre.Carte?.Modele}".Trim();
-            string messageRecap = $"Acheter {nomVehicule} pour {offre.Prix:N0} coins ? Solde actuel : {SoldeUtilisateur:N0} coins.";
+            string messageRecap = $"Acheter {nomVehicule} pour {offre.ValeurJetonsFormatee} ({offre.PrixReelFormate}) ?\nSolde actuel : {SoldeJetonsFormate}.";
 
             bool confirmation = true;
             if (Application.Current?.Windows.Count > 0 && Application.Current.Windows[0].Page != null)
@@ -394,11 +384,10 @@ public partial class MarcheVueModele : ObservableObject
             }
 
             if (!confirmation)
-                return; // Annulation sans débit (F23_03, F23_B01)
+                return;
 
             Message = "";
 
-            // Appel API sécurisé par Idempotency-Key (RM006)
             bool succes = await serviceApi.AcheterOffreAsync(offre.Identifiant);
             if (succes)
             {
@@ -434,7 +423,7 @@ public partial class MarcheVueModele : ObservableObject
     }
 
     /// <summary>
-    /// Réserve temporairement une offre pendant 15 minutes (Feature F23 / RM004).
+    /// Permet de réserver une offre sur le marché pendant 15 minutes
     /// </summary>
     [RelayCommand]
     public async Task ReserverOffreAsync(Offre? offre)
@@ -495,7 +484,7 @@ public partial class MarcheVueModele : ObservableObject
     }
 
     /// <summary>
-    /// Permet au propriétaire d'une voiture mise en vente de retirer son annonce du marché tant qu'elle n'est pas vendue (EF032).
+    /// Permet au vendeur de retirer sa propre annonce du marché tant qu'elle n'est pas vendue
     /// </summary>
     [RelayCommand]
     public async Task RetirerOffreAsync(Offre? offre)

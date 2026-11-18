@@ -19,19 +19,15 @@
     Shell.TabBarTitleColor="#E63946"
     Shell.NavBarHasShadow="False">
 
-    <!-- =================================================================== -->
-    <!-- 1. ROUTE RACINE NON AUTHENTIFIÉE (CONNEXION)                        -->
-    <!-- =================================================================== -->
+    <!-- Page de connexion affichée au lancement -->
     <ShellContent
         Route="ConnexionPage"
         Title="Connexion"
         ContentTemplate="{DataTemplate vues:ConnexionPage}" />
 
-    <!-- =================================================================== -->
-    <!-- 2. BARRE D'ONGLETS AUTHENTIFIÉE (5 ONGLETS FIGMA / F20)             -->
-    <!-- =================================================================== -->
+    <!-- Barre de navigation avec les 5 onglets principaux -->
     <TabBar Route="MainTabs">
-        <!-- Onglet 1: Catalogue de véhicules -->
+        <!-- Onglet 1 : Catalogue des voitures -->
         <Tab Title="Catalogue" Route="Catalogue">
             <ShellContent
                 Title="Catalogue"
@@ -39,7 +35,7 @@
                 Route="CataloguePage" />
         </Tab>
 
-        <!-- Onglet 2: Marché / Trading -->
+        <!-- Onglet 2 : Marché -->
         <Tab Title="Marché" Route="Marche">
             <ShellContent
                 Title="Marché"
@@ -47,7 +43,7 @@
                 Route="MarchePage" />
         </Tab>
 
-        <!-- Onglet 3: Ordres (Dédié et Distinct / F33) -->
+        <!-- Onglet 3 : Mes ventes et réservations -->
         <Tab Title="Ordres" Route="Ordres">
             <ShellContent
                 Title="Ordres"
@@ -55,7 +51,7 @@
                 Route="OrdresPage" />
         </Tab>
 
-        <!-- Onglet 4: Garage / Portefeuille -->
+        <!-- Onglet 4 : Garage personnel -->
         <Tab Title="Garage" Route="Garage">
             <ShellContent
                 Title="Garage"
@@ -63,7 +59,7 @@
                 Route="GaragePage" />
         </Tab>
 
-        <!-- Onglet 5: Activité -->
+        <!-- Onglet 5 : Historique des activités -->
         <Tab Title="Activité" Route="Activite">
             <ShellContent
                 Title="Activité"

@@ -26,9 +26,17 @@ public class ServiceAPI
     #region Attributs
 
     private const string CleStockageJeton = "automasters_jwt";
+    private const string CleStockageMotDePasseSync = "automasters_sync_pwd";
+    private const string ComptePartageServeur = "sync_partage_g2";
     private static ServiceAPI instance = new ServiceAPI();
     private HttpClient client;
+    private readonly HttpClient clientSyncDistant;
     private string? jetonSession;
+    private string? motDePasseSession;
+    private string? jetonSyncDistant;
+    private string idCarteReferenceSync = "4fc8c5aa-2f6e-4cbf-be48-9dc4dc30777e";
+    private string empreinteDernierSyncServeur = "";
+    private bool synchronisationServeurEnCours;
     private readonly bool estModeProduction;
     private string utilisateurConnecte = "bob";
     private List<Carte>? cacheBaseVoituresLocale;
@@ -47,24 +55,27 @@ public class ServiceAPI
     #region Constructeurs
 
     /// <summary>
-    /// Constructeur par défaut (utilisé en production et par l'instance Singleton).
-    /// Initialise le client HTTP avec l'URL de base et un timeout de 15 secondes.
+    /// Constructeur par défaut qui configure le client HTTP vers l'API du Groupe 2
     /// </summary>
     public ServiceAPI() : this(null)
     {
     }
 
     /// <summary>
-    /// Constructeur avec gestionnaire HTTP injectable.
-    /// Permet d'injecter un gestionnaire simulé (ex: MockHttpMessageHandler) pour les tests unitaires 100% hors-ligne.
+    /// Constructeur permettant de passer un gestionnaire HTTP personnalisé
     /// </summary>
-    /// <param name="handler">Gestionnaire HTTP injectable ou null pour le gestionnaire par défaut.</param>
     public ServiceAPI(HttpMessageHandler? handler = null)
     {
         estModeProduction = handler == null;
         client = handler != null ? new HttpClient(handler) : new HttpClient();
         client.BaseAddress = new Uri("https://api-cartes-g2.fldsio.com/");
         client.Timeout = TimeSpan.FromSeconds(15);
+
+        clientSyncDistant = new HttpClient
+        {
+            BaseAddress = new Uri("https://api-cartes-g2.fldsio.com/"),
+            Timeout = TimeSpan.FromSeconds(15)
+        };
 
         if (estModeProduction)
         {
@@ -112,13 +123,10 @@ public class ServiceAPI
 
     #region Methodes
 
-    // =========================================================================
-    // Chargement de la base locale de 300 voitures (Mode Production)
-    // =========================================================================
+    // Base locale des voitures --------------------------------------
 
     /// <summary>
-    /// Charge le fichier local cars_database.json (300 voitures) contenant les photos vérifiées,
-    /// les prix réels en euros et les caractéristiques techniques.
+    /// Charge le fichier local cars_database.json contenant les 300 voitures
     /// </summary>
     private List<Carte> ChargerBaseVoituresLocale()
     {
@@ -249,17 +257,19 @@ public class ServiceAPI
         var refLocale = TrouverCarteReferenceLocale(carte);
         if (refLocale != null)
         {
-            if (Guid.TryParse(carte.Identifiant, out _))
-            {
-                refLocale.Identifiant = carte.Identifiant;
-            }
             if (string.IsNullOrWhiteSpace(carte.ImageUrl))
                 carte.ImageUrl = refLocale.ImageUrl;
             carte.Rarete = NormaliserRareteFrancaise(string.IsNullOrWhiteSpace(carte.Rarete) ? refLocale.Rarete : carte.Rarete);
-            if (carte.PrixOfficiel <= 0m)
-                carte.PrixOfficiel = refLocale.PrixOfficiel;
-            else
-                refLocale.PrixOfficiel = carte.PrixOfficiel;
+
+            // Garantit que le prix reste cohérent avec la valeur réelle du véhicule (ex: BMW X5 M 2023 autour de 165 000 €)
+            // tout en appliquant la variation boursière en direct renvoyée par l'API
+            if (refLocale.PrixOfficiel > 0m &&
+                (carte.PrixOfficiel <= 0m ||
+                 carte.PrixOfficiel < refLocale.PrixOfficiel * 0.85m ||
+                 carte.PrixOfficiel > refLocale.PrixOfficiel * 1.15m))
+            {
+                carte.PrixOfficiel = Math.Round(refLocale.PrixOfficiel * (1m + (carte.VariationCours / 100m)), 2);
+            }
 
             if (carte.Puissance <= 0 || refLocale.Puissance > 0)
                 carte.Puissance = refLocale.Puissance;
@@ -299,23 +309,18 @@ public class ServiceAPI
             {
                 carte.HorodatageCours = coteModifiee.Horodatage;
             }
-            if (refLocale != null)
-            {
-                refLocale.PrixOfficiel = coteModifiee.Prix;
-                refLocale.VariationCours = coteModifiee.Variation;
-            }
         }
 
         return carte;
     }
 
     /// <summary>
-    /// Indique si l'application tourne dans le runtime graphique MAUI (et non dans un test unitaire xUnit isolé).
+    /// Vérifie si l'application complète est lancée avec une fenêtre graphique MAUI
     /// </summary>
     private bool EstExecutionApplicationReelle => estModeProduction && Microsoft.Maui.Controls.Application.Current != null;
 
     /// <summary>
-    /// Chemin du fichier JSON partagé permettant la synchronisation en direct entre les comptes (alice, bob, charlie).
+    /// Chemin du fichier JSON partagé permettant la persistance locale et la synchronisation entre fenêtres.
     /// </summary>
     private static string ObtenirCheminFichierPartage()
     {
@@ -328,8 +333,7 @@ public class ServiceAPI
     }
 
     /// <summary>
-    /// Recharge l'état partagé du marché, des garages et des soldes depuis le disque pour que
-    /// toutes les opérations d'Alice, Bob et Charlie soient visibles en direct.
+    /// Recharge l'état partagé du marché, des garages et des soldes depuis le disque local.
     /// </summary>
     private void ChargerEtatPartageDepuisDisque()
     {
@@ -402,7 +406,7 @@ public class ServiceAPI
     }
 
     /// <summary>
-    /// Sauvegarde l'état partagé sur le disque et notifie en temps réel tous les écrans ouverts.
+    /// Sauvegarde l'état partagé sur le disque local.
     /// </summary>
     private void SauvegarderEtatPartageSurDisque()
     {
@@ -435,11 +439,540 @@ public class ServiceAPI
     }
 
     /// <summary>
-    /// Déclenche l'événement DonneesMarcheModifiees sur le thread principal de l'interface.
+    /// Retourne l'index numérique (1..300) d'une voiture dans la base locale cars_database.json.
+    /// </summary>
+    private int ObtenirIndexVoitureLocale(Carte? carte)
+    {
+        if (carte == null)
+            return 1;
+
+        var baseLocale = ChargerBaseVoituresLocale();
+        var refLocale = TrouverCarteReferenceLocale(carte);
+        if (refLocale != null && int.TryParse(refLocale.Identifiant, out int idNum) && idNum >= 1 && idNum <= 999)
+        {
+            return idNum;
+        }
+
+        int idx = baseLocale.FindIndex(c =>
+            string.Equals(NormaliserTexteComparaison(c.Marque), NormaliserTexteComparaison(carte.Marque), StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(NormaliserTexteComparaison(c.Modele), NormaliserTexteComparaison(carte.Modele), StringComparison.OrdinalIgnoreCase));
+
+        return idx >= 0 ? (idx + 1) : 1;
+    }
+
+    /// <summary>
+    /// Retrouve une voiture dans la base locale cars_database.json à partir de son index numérique (1..300).
+    /// </summary>
+    private Carte TrouverVoitureParIndexLocal(int indexVoiture)
+    {
+        var baseLocale = ChargerBaseVoituresLocale();
+        var parId = baseLocale.FirstOrDefault(c => string.Equals(c.Identifiant, indexVoiture.ToString(), StringComparison.OrdinalIgnoreCase));
+        if (parId != null)
+        {
+            return ClonerCarte(parId);
+        }
+
+        if (indexVoiture >= 1 && indexVoiture <= baseLocale.Count)
+        {
+            return ClonerCarte(baseLocale[indexVoiture - 1]);
+        }
+
+        return baseLocale.Count > 0 ? ClonerCarte(baseLocale[0]) : new Carte { Marque = "BMW", Modele = "X5 M", PrixOfficiel = 165000m };
+    }
+
+    /// <summary>
+    /// Encode un montant en Euros (par pas de 10 € = 0,01 Jeton) dans une date UTC (Jour 1..28, Heure, Minute, Seconde).
+    /// </summary>
+    private static string EncoderMontantDansDate(int annee, int mois, decimal montantEuros)
+    {
+        long centimesJetons = (long)Math.Clamp(Math.Round(montantEuros / 10m, 0), 0m, 2419199m);
+        int jour = 1 + (int)(centimesJetons / 86400L);
+        int reste = (int)(centimesJetons % 86400L);
+        int heure = reste / 3600;
+        int minute = (reste % 3600) / 60;
+        int seconde = reste % 60;
+
+        var dto = new DateTimeOffset(annee, Math.Clamp(mois, 1, 12), Math.Clamp(jour, 1, 28), heure, minute, seconde, TimeSpan.Zero);
+        return dto.ToString("yyyy-MM-ddTHH:mm:ssZ");
+    }
+
+    /// <summary>
+    /// Décode un montant en Euros depuis une date UTC encodée par EncoderMontantDansDate.
+    /// </summary>
+    private static decimal DecoderMontantDepuisDate(DateTimeOffset dto)
+    {
+        var utc = dto.ToUniversalTime();
+        long centimesJetons = ((long)(utc.Day - 1) * 86400L) + (utc.Hour * 3600L) + (utc.Minute * 60L) + utc.Second;
+        return centimesJetons * 10m;
+    }
+
+    /// <summary>
+    /// Authentifie le canal de synchronisation multi-PC sur https://api-cartes-g2.fldsio.com en utilisant
+    /// le mot de passe saisi lors de la connexion de l'étudiant (aucun mot de passe codé en dur).
+    /// </summary>
+    private async Task<bool> AssurerAuthentificationSyncDistantAsync()
+    {
+        if (!EstExecutionApplicationReelle)
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(jetonSyncDistant))
+            return true;
+
+        if (string.IsNullOrWhiteSpace(motDePasseSession))
+        {
+            try
+            {
+                motDePasseSession = await SecureStorage.Default.GetAsync(CleStockageMotDePasseSync);
+            }
+            catch
+            {
+                // Ignore si SecureStorage indisponible
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(motDePasseSession))
+            return false;
+
+        try
+        {
+            var chargeLogin = new
+            {
+                username = ComptePartageServeur,
+                password = motDePasseSession
+            };
+            string jsonLogin = JsonConvert.SerializeObject(chargeLogin);
+            using var repLogin = await clientSyncDistant.PostAsync("auth/login", new StringContent(jsonLogin, Encoding.UTF8, "application/json"));
+            if (repLogin.IsSuccessStatusCode)
+            {
+                string contenu = await repLogin.Content.ReadAsStringAsync();
+                JObject obj = JObject.Parse(contenu);
+                jetonSyncDistant = (string?)obj["accessToken"];
+            }
+            else
+            {
+                var chargeReg = new
+                {
+                    username = ComptePartageServeur,
+                    displayName = "Synchronisation Temps Reel",
+                    password = motDePasseSession
+                };
+                string jsonReg = JsonConvert.SerializeObject(chargeReg);
+                using var repReg = await clientSyncDistant.PostAsync("auth/register", new StringContent(jsonReg, Encoding.UTF8, "application/json"));
+                if (repReg.IsSuccessStatusCode)
+                {
+                    string contenu = await repReg.Content.ReadAsStringAsync();
+                    JObject obj = JObject.Parse(contenu);
+                    jetonSyncDistant = (string?)obj["accessToken"];
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(jetonSyncDistant))
+            {
+                clientSyncDistant.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jetonSyncDistant);
+                return true;
+            }
+        }
+        catch
+        {
+            // Tolérance réseau
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Publie l'état complet (garages d'Alice/Bob/Charlie, offres du marché, soldes et prix révisés)
+    /// sur le serveur https://api-cartes-g2.fldsio.com pour que tous les PC connectés voient exactement la même chose en direct.
+    /// </summary>
+    private async Task PublierEtatSurServeurDistantAsync()
+    {
+        if (!EstExecutionApplicationReelle)
+            return;
+
+        int attente = 0;
+        while (synchronisationServeurEnCours && attente < 40)
+        {
+            await Task.Delay(50);
+            attente++;
+        }
+
+        if (synchronisationServeurEnCours)
+            return;
+
+        synchronisationServeurEnCours = true;
+        try
+        {
+            if (!await AssurerAuthentificationSyncDistantAsync())
+                return;
+
+            // 1. Construire la liste des enregistrements souhaités (clé signature -> (threshold, expiresAt))
+            var souhaites = new List<(string Signature, decimal Threshold, string ExpiresAt)>();
+            string[] joueurs = new[] { "alice", "bob", "charlie" };
+
+            for (int j = 0; j < joueurs.Length; j++)
+            {
+                string joueur = joueurs[j];
+                int anneeGarage = 2101 + j;
+                int anneeSolde = 2201 + j;
+
+                // Enregistrement du solde Portefeuille du joueur (toujours présent pour marquer l'initialisation du serveur)
+                decimal solde = soldesParUtilisateur.ContainsKey(joueur) ? soldesParUtilisateur[joueur] : 0m;
+                string expSolde = EncoderMontantDansDate(anneeSolde, 1, solde);
+                souhaites.Add(($"SOLDE|{anneeSolde}|{expSolde}", 0.001m, expSolde));
+
+                // Enregistrement de chaque voiture possédée par le joueur (dans son garage et éventuellement en vente sur le marché)
+                if (garagesParUtilisateur.TryGetValue(joueur, out var listeGarage) && listeGarage != null)
+                {
+                    foreach (var cp in listeGarage)
+                    {
+                        int idxVoiture = ObtenirIndexVoitureLocale(cp.Carte);
+                        decimal thresholdVoiture = Math.Clamp(Math.Round(idxVoiture / 1000m, 4), 0.001m, 0.999m);
+                        string cleEx = cp.IdentifiantExemplaire ?? cp.Identifiant;
+
+                        var offreActive = offresSession.FirstOrDefault(o =>
+                            (string.Equals(o.Statut, "active", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(o.Statut, "reserved", StringComparison.OrdinalIgnoreCase)) &&
+                            string.Equals(o.IdentifiantExemplaire, cleEx, StringComparison.OrdinalIgnoreCase));
+
+                        int moisStatut = 1;
+                        decimal montantReference = cp.PrixAchat > 0m ? cp.PrixAchat : (cp.ValeurActuelle > 0m ? cp.ValeurActuelle : (cp.Carte?.PrixOfficiel ?? 35000m));
+
+                        if (offreActive != null)
+                        {
+                            montantReference = offreActive.Prix;
+                            if (offreActive.EstReservee)
+                            {
+                                string resPar = (offreActive.ReservePar ?? "").Trim().ToLowerInvariant();
+                                moisStatut = resPar == "alice" ? 3 : (resPar == "bob" ? 4 : 5);
+                            }
+                            else
+                            {
+                                moisStatut = 2;
+                            }
+                        }
+
+                        string expVoiture = EncoderMontantDansDate(anneeGarage, moisStatut, montantReference);
+                        souhaites.Add(($"CAR|{anneeGarage}|{idxVoiture}|{expVoiture}", thresholdVoiture, expVoiture));
+                    }
+                }
+            }
+
+            // Enregistrement des cours modifiés par les ventes sur le marché
+            foreach (var kvp in coursModifiesParVentes)
+            {
+                var baseLocale = ChargerBaseVoituresLocale();
+                var refCarte = baseLocale.FirstOrDefault(c =>
+                    string.Equals($"{NormaliserTexteComparaison(c.Marque)}|{NormaliserTexteComparaison(c.Modele)}", kvp.Key, StringComparison.OrdinalIgnoreCase));
+                if (refCarte != null && kvp.Value.Prix > 0m)
+                {
+                    int idxVoiture = ObtenirIndexVoitureLocale(refCarte);
+                    decimal thresholdVoiture = Math.Clamp(Math.Round(idxVoiture / 1000m, 4), 0.001m, 0.999m);
+                    int anneeCote = kvp.Value.Variation >= 0m ? 2301 : 2302;
+                    int moisVar = Math.Clamp(1 + (int)Math.Round(Math.Abs(kvp.Value.Variation) / 2m, 0), 1, 12);
+                    string expCote = EncoderMontantDansDate(anneeCote, moisVar, kvp.Value.Prix);
+                    souhaites.Add(($"QUOTE|{anneeCote}|{idxVoiture}|{expCote}", thresholdVoiture, expCote));
+                }
+            }
+
+            // 2. Récupérer les enregistrements actuellement actifs sur le serveur
+            using var repActuels = await clientSyncDistant.GetAsync("conditional-orders");
+            if (!repActuels.IsSuccessStatusCode)
+                return;
+
+            string jsonActuels = await repActuels.Content.ReadAsStringAsync();
+            JObject objActuels = JObject.Parse(jsonActuels);
+            JArray? itemsActuels = objActuels["items"] as JArray;
+
+            var existantsActifs = new List<(string Id, string Signature)>();
+            if (itemsActuels != null)
+            {
+                foreach (JToken t in itemsActuels)
+                {
+                    string? statut = (string?)t["status"];
+                    string? id = (string?)t["id"];
+                    string? expStr = (string?)t["expiresAt"];
+                    decimal thresh = t["threshold"] != null ? (decimal)t["threshold"]! : 0.001m;
+
+                    if (string.Equals(statut, "active", StringComparison.OrdinalIgnoreCase) &&
+                        !string.IsNullOrWhiteSpace(id) &&
+                        !string.IsNullOrWhiteSpace(expStr) &&
+                        DateTimeOffset.TryParse(expStr, out DateTimeOffset dto))
+                    {
+                        var utc = dto.ToUniversalTime();
+                        string expNorm = utc.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                        int idxV = (int)Math.Round(thresh * 1000m, 0);
+                        string sig = (utc.Year >= 2201 && utc.Year <= 2203)
+                            ? $"SOLDE|{utc.Year}|{expNorm}"
+                            : (utc.Year >= 2301 && utc.Year <= 2302)
+                                ? $"QUOTE|{utc.Year}|{idxV}|{expNorm}"
+                                : $"CAR|{utc.Year}|{idxV}|{expNorm}";
+                        existantsActifs.Add((id, sig));
+                    }
+                }
+            }
+
+            // 3. Calculer les suppressions et les ajouts nécessaires (diff minimal ultra-rapide)
+            var restantsASouhaiter = souhaites.ToList();
+            var idsAConserver = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var ex in existantsActifs)
+            {
+                int idxMatch = restantsASouhaiter.FindIndex(s => string.Equals(s.Signature, ex.Signature, StringComparison.OrdinalIgnoreCase));
+                if (idxMatch >= 0)
+                {
+                    idsAConserver.Add(ex.Id);
+                    restantsASouhaiter.RemoveAt(idxMatch);
+                }
+            }
+
+            foreach (var ex in existantsActifs)
+            {
+                if (!idsAConserver.Contains(ex.Id))
+                {
+                    using var repDel = await clientSyncDistant.DeleteAsync($"conditional-orders/{ex.Id}");
+                }
+            }
+
+            foreach (var ajout in restantsASouhaiter)
+            {
+                var body = new
+                {
+                    type = "buy",
+                    cardId = idCarteReferenceSync,
+                    copyId = (string?)null,
+                    threshold = ajout.Threshold,
+                    quantity = 1,
+                    expiresAt = ajout.ExpiresAt
+                };
+                string jsonBody = JsonConvert.SerializeObject(body);
+                using var repPost = await clientSyncDistant.PostAsync("conditional-orders", new StringContent(jsonBody, Encoding.UTF8, "application/json"));
+            }
+        }
+        catch
+        {
+            // Tolérance réseau
+        }
+        finally
+        {
+            synchronisationServeurEnCours = false;
+        }
+    }
+
+    /// <summary>
+    /// Télécharge en une seule requête GET l'état partagé depuis https://api-cartes-g2.fldsio.com
+    /// afin que n'importe quel PC connecté (Alice, Bob ou Charlie) voie instantanément les ventes, garages et soldes.
+    /// </summary>
+    public async Task SynchroniserDepuisServeurDistantAsync()
+    {
+        if (!EstExecutionApplicationReelle || synchronisationServeurEnCours)
+            return;
+
+        synchronisationServeurEnCours = true;
+        try
+        {
+            if (!await AssurerAuthentificationSyncDistantAsync())
+                return;
+
+            using var reponse = await clientSyncDistant.GetAsync("conditional-orders");
+            if (!reponse.IsSuccessStatusCode)
+                return;
+
+            string json = await reponse.Content.ReadAsStringAsync();
+            JObject obj = JObject.Parse(json);
+            JArray? items = obj["items"] as JArray;
+            if (items == null)
+                return;
+
+            var actifs = new List<(string Id, decimal Threshold, DateTimeOffset ExpiresAt)>();
+            foreach (JToken t in items)
+            {
+                string? statut = (string?)t["status"];
+                string? id = (string?)t["id"];
+                string? expStr = (string?)t["expiresAt"];
+                decimal thresh = t["threshold"] != null ? (decimal)t["threshold"]! : 0.001m;
+
+                if (string.Equals(statut, "active", StringComparison.OrdinalIgnoreCase) &&
+                    !string.IsNullOrWhiteSpace(id) &&
+                    !string.IsNullOrWhiteSpace(expStr) &&
+                    DateTimeOffset.TryParse(expStr, out DateTimeOffset dto))
+                {
+                    var utc = dto.ToUniversalTime();
+                    if (utc.Year >= 2101 && utc.Year <= 2302)
+                    {
+                        actifs.Add((id, thresh, utc));
+                    }
+                }
+            }
+
+            // Si le serveur distant est encore vierge mais que ce PC possède déjà des voitures/offres locales, on les publie sur le serveur
+            if (actifs.Count == 0)
+            {
+                bool aDonneesLocales = offresSession.Count > 0 ||
+                    garagesParUtilisateur.Values.Any(g => g.Count > 0) ||
+                    soldesParUtilisateur.Values.Any(s => s > 0m);
+
+                if (aDonneesLocales)
+                {
+                    synchronisationServeurEnCours = false;
+                    await PublierEtatSurServeurDistantAsync();
+                }
+                return;
+            }
+
+            string nouvelleEmpreinte = string.Join(";", actifs
+                .OrderBy(a => a.Id)
+                .Select(a => $"{a.Id}:{a.Threshold}:{a.ExpiresAt:yyyyMMddHHmmss}"));
+
+            if (string.Equals(nouvelleEmpreinte, empreinteDernierSyncServeur, StringComparison.Ordinal))
+                return;
+
+            empreinteDernierSyncServeur = nouvelleEmpreinte;
+
+            var nouveauxGarages = new Dictionary<string, List<CartePossedee>>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "alice", new List<CartePossedee>() },
+                { "bob", new List<CartePossedee>() },
+                { "charlie", new List<CartePossedee>() }
+            };
+            var nouveauxSoldes = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "alice", 0m },
+                { "bob", 0m },
+                { "charlie", 0m }
+            };
+            var nouvellesOffres = new List<Offre>();
+            var nouvellesCotes = new Dictionary<string, PointCotationMarche>(StringComparer.OrdinalIgnoreCase);
+
+            // 1. Décoder d'abord les cotes modifiées par les ventes (2301..2302)
+            foreach (var item in actifs.Where(a => a.ExpiresAt.Year == 2301 || a.ExpiresAt.Year == 2302))
+            {
+                int idxVoiture = (int)Math.Round(item.Threshold * 1000m, 0);
+                Carte carteRef = TrouverVoitureParIndexLocal(idxVoiture);
+                decimal nouveauPrix = DecoderMontantDepuisDate(item.ExpiresAt);
+                decimal variationAbs = (item.ExpiresAt.Month - 1) * 2m;
+                decimal variation = item.ExpiresAt.Year == 2301 ? variationAbs : -variationAbs;
+                string cleCours = $"{NormaliserTexteComparaison(carteRef.Marque)}|{NormaliserTexteComparaison(carteRef.Modele)}";
+
+                nouvellesCotes[cleCours] = new PointCotationMarche(
+                    nouveauPrix,
+                    variation,
+                    DateTime.Now.ToString("dd/MM/yyyy à HH:mm:ss"),
+                    54);
+            }
+
+            // 2. Décoder les soldes des portefeuilles (2201..2203)
+            foreach (var item in actifs.Where(a => a.ExpiresAt.Year >= 2201 && a.ExpiresAt.Year <= 2203))
+            {
+                string joueur = item.ExpiresAt.Year == 2201 ? "alice" : (item.ExpiresAt.Year == 2202 ? "bob" : "charlie");
+                nouveauxSoldes[joueur] = DecoderMontantDepuisDate(item.ExpiresAt);
+            }
+
+            // 3. Décoder les voitures des garages et les offres du marché (2101..2103)
+            foreach (var item in actifs.Where(a => a.ExpiresAt.Year >= 2101 && a.ExpiresAt.Year <= 2103))
+            {
+                string proprietaire = item.ExpiresAt.Year == 2101 ? "alice" : (item.ExpiresAt.Year == 2102 ? "bob" : "charlie");
+                int idxVoiture = (int)Math.Round(item.Threshold * 1000m, 0);
+                Carte carte = TrouverVoitureParIndexLocal(idxVoiture);
+                EnrichirCarte(carte);
+
+                string cleCours = $"{NormaliserTexteComparaison(carte.Marque)}|{NormaliserTexteComparaison(carte.Modele)}";
+                if (nouvellesCotes.TryGetValue(cleCours, out var coteMod) && coteMod.Prix > 0m)
+                {
+                    carte.PrixOfficiel = coteMod.Prix;
+                    carte.VariationCours = coteMod.Variation;
+                }
+
+                decimal montantEuros = DecoderMontantDepuisDate(item.ExpiresAt);
+                string idCourt = item.Id.Replace("-", "").Substring(0, Math.Min(10, item.Id.Replace("-", "").Length));
+                string idExemplaire = "ex-srv-" + idCourt;
+
+                decimal coutAcquisition = item.ExpiresAt.Month == 1
+                    ? (montantEuros > 0m ? montantEuros : carte.PrixOfficiel)
+                    : carte.PrixOfficiel;
+
+                var exemplaire = new CartePossedee(
+                    idExemplaire,
+                    ClonerCarte(carte),
+                    carte.PrixOfficiel,
+                    1,
+                    coutAcquisition);
+                nouveauxGarages[proprietaire].Add(exemplaire);
+
+                if (item.ExpiresAt.Month >= 2)
+                {
+                    bool estRes = item.ExpiresAt.Month >= 3;
+                    string statutOffre = estRes ? "reserved" : "active";
+                    string idOffre = "offre-srv-" + idCourt;
+
+                    var offre = new Offre(
+                        idOffre,
+                        idExemplaire,
+                        montantEuros > 0m ? montantEuros : carte.PrixOfficiel,
+                        proprietaire,
+                        statutOffre,
+                        ClonerCarte(carte));
+
+                    if (estRes)
+                    {
+                        offre.EstReservee = true;
+                        offre.ReservePar = item.ExpiresAt.Month == 3 ? "alice" : (item.ExpiresAt.Month == 4 ? "bob" : "charlie");
+                        offre.DateExpiration = DateTime.UtcNow.AddMinutes(15);
+                    }
+
+                    nouvellesOffres.Add(offre);
+                }
+            }
+
+            lock (verrouPartage)
+            {
+                garagesParUtilisateur.Clear();
+                foreach (var kvp in nouveauxGarages)
+                    garagesParUtilisateur[kvp.Key] = kvp.Value;
+
+                soldesParUtilisateur.Clear();
+                foreach (var kvp in nouveauxSoldes)
+                    soldesParUtilisateur[kvp.Key] = kvp.Value;
+
+                offresSession.Clear();
+                offresSession.AddRange(nouvellesOffres);
+
+                coursModifiesParVentes.Clear();
+                foreach (var kvp in nouvellesCotes)
+                    coursModifiesParVentes[kvp.Key] = kvp.Value;
+            }
+
+            SauvegarderEtatPartageSurDisque();
+
+            if (Microsoft.Maui.Controls.Application.Current?.Dispatcher != null)
+            {
+                Microsoft.Maui.Controls.Application.Current.Dispatcher.Dispatch(() =>
+                {
+                    DonneesMarcheModifiees?.Invoke();
+                });
+            }
+        }
+        catch
+        {
+            // Tolérance réseau
+        }
+        finally
+        {
+            synchronisationServeurEnCours = false;
+        }
+    }
+
+    /// <summary>
+    /// Déclenche l'événement DonneesMarcheModifiees sur le thread principal de l'interface
+    /// et publie immédiatement l'état sur le serveur distant https://api-cartes-g2.fldsio.com.
     /// </summary>
     private void NotifierModificationDonnees()
     {
         SauvegarderEtatPartageSurDisque();
+        _ = Task.Run(async () =>
+        {
+            await PublierEtatSurServeurDistantAsync();
+        });
+
         try
         {
             if (Microsoft.Maui.Controls.Application.Current?.Dispatcher != null)
@@ -461,8 +994,8 @@ public class ServiceAPI
     }
 
     /// <summary>
-    /// Surveille toutes les 2 secondes si un autre compte (ou une autre fenêtre de l'application)
-    /// a publié une offre, acheté une voiture ou envoyé un cadeau, et rafraîchit l'interface en direct.
+    /// Surveille toutes les 2,5 secondes les mises à jour sur le serveur https://api-cartes-g2.fldsio.com
+    /// (et sur le disque local) afin que les actions d'un PC (ex: Bob) s'affichent en direct sur le PC d'un autre joueur (ex: Alice).
     /// </summary>
     private void DemarrerSurveillancePartageTempsReel()
     {
@@ -474,9 +1007,11 @@ public class ServiceAPI
         {
             while (surveillancePartageActive)
             {
-                await Task.Delay(2000);
+                await Task.Delay(2500);
                 try
                 {
+                    await SynchroniserDepuisServeurDistantAsync();
+
                     string chemin = ObtenirCheminFichierPartage();
                     if (File.Exists(chemin))
                     {
@@ -564,12 +1099,8 @@ public class ServiceAPI
         return copie;
     }
 
-    // =========================================================================
-    // Gestion des réponses et des erreurs HTTP
-    // =========================================================================
-
     /// <summary>
-    /// Lit le contenu textuel d'une réponse HTTP et gère les erreurs en désérialisant l'objet ErreurApi.
+    /// Lit le contenu d'une réponse HTTP et lève une erreur explicite si le code HTTP n'est pas valide
     /// </summary>
     private async Task<string> LireReponseAsync(HttpResponseMessage reponse)
     {
@@ -623,8 +1154,7 @@ public class ServiceAPI
     }
 
     /// <summary>
-    /// Restaure le jeton Bearer depuis le stockage sécurisé SecureStorage si l'en-tête est vide.
-    /// Protégé contre les environnements de test où SecureStorage n'est pas initialisé.
+    /// Récupère le token JWT sauvegardé dans SecureStorage et l'ajoute à l'en-tête HTTP
     /// </summary>
     public async Task<string?> RestaurerAuthentificationAsync()
     {
@@ -643,14 +1173,14 @@ public class ServiceAPI
         }
         catch
         {
-            // Fallback silencieux en environnement de test unitaire sans WinRT/MAUI runtime
+            // Ignore si SecureStorage n'est pas disponible
         }
 
         return null;
     }
 
     /// <summary>
-    /// Enregistre le jeton d'accès dans l'en-tête HTTP et le persiste dans SecureStorage.
+    /// Sauvegarde le token JWT dans l'en-tête HTTP et dans SecureStorage
     /// </summary>
     private async Task SauvegarderJetonAsync(string token)
     {
@@ -663,21 +1193,12 @@ public class ServiceAPI
         }
         catch
         {
-            // Fallback silencieux si SecureStorage est indisponible hors contexte MAUI
+            // Ignore si SecureStorage n'est pas disponible
         }
     }
 
     /// <summary>
-    /// Récupère le jeton stocké ou en mémoire (alias pour compatibilité).
-    /// </summary>
-    public async Task<string?> GetTokenAsync()
-    {
-        return await RestaurerAuthentificationAsync();
-    }
-
-    /// <summary>
-    /// Réinitialise l'état de session local (mémoire, en-tête Authorization et stockage sécurisé).
-    /// Sécurisé contre les exceptions hors contexte MAUI / exécution de tests unitaires headless.
+    /// Vide le token en mémoire et dans SecureStorage lors de la déconnexion
     /// </summary>
     private void ReinitialiserSession()
     {
@@ -690,38 +1211,33 @@ public class ServiceAPI
         }
         catch
         {
-            // Fallback silencieux si SecureStorage est indisponible (ex: tests unitaires xUnit sans runtime MAUI)
+            // Ignore si SecureStorage n'est pas disponible
         }
     }
 
     /// <summary>
-    /// Déconnecte l'utilisateur en réinitialisant l'en-tête Authorization et en vidant SecureStorage.
+    /// Déconnecte l'utilisateur actuel
     /// </summary>
-    public async Task LogoutAsync()
+    public async Task SeDeconnecterAsync()
     {
         ReinitialiserSession();
         await Task.CompletedTask;
     }
 
-    // =========================================================================
-    // F07: Authentification (POST auth/login)
-    // =========================================================================
+    // Connexion et authentification --------------------------------------
 
     /// <summary>
-    /// Authentifie un utilisateur avec ses identifiants et enregistre le jeton Bearer.
+    /// Connecte un joueur via POST /auth/login et enregistre son token JWT
     /// </summary>
-    /// <param name="email">Identifiant de l'étudiant (alice, bob ou charlie).</param>
-    /// <param name="password">Mot de passe de l'étudiant.</param>
-    /// <returns>La réponse de connexion contenant le jeton JWT.</returns>
-    public async Task<ReponseConnexion> SeConnecterAsync(string email, string password)
+    public async Task<ReponseConnexion> SeConnecterAsync(string identifiant, string motDePasse)
     {
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        if (string.IsNullOrWhiteSpace(identifiant) || string.IsNullOrWhiteSpace(motDePasse))
             throw new ArgumentException("L'identifiant et le mot de passe sont obligatoires.");
 
         var demande = new DemandeConnexion
         {
-            Identifiant = email.Trim(),
-            MotDePasse = password
+            Identifiant = identifiant.Trim(),
+            MotDePasse = motDePasse
         };
 
         string json = JsonConvert.SerializeObject(demande);
@@ -742,12 +1258,30 @@ public class ServiceAPI
         if (connexion == null || string.IsNullOrWhiteSpace(connexion.JetonAcces))
             throw new Exception("Le jeton d'accès est absent de la réponse du serveur.");
 
-        utilisateurConnecte = email.Trim().ToLowerInvariant();
+        utilisateurConnecte = identifiant.Trim().ToLowerInvariant();
+        motDePasseSession = motDePasse.Trim();
         await SauvegarderJetonAsync(connexion.JetonAcces);
+
+        try
+        {
+            if (EstExecutionApplicationReelle)
+            {
+                await SecureStorage.Default.SetAsync(CleStockageMotDePasseSync, motDePasseSession);
+            }
+        }
+        catch
+        {
+            // Ignore dans un environnement sans SecureStorage
+        }
 
         if (estModeProduction)
         {
             ChargerEtatPartageDepuisDisque();
+            if (EstExecutionApplicationReelle)
+            {
+                await SynchroniserDepuisServeurDistantAsync();
+            }
+
             EnregistrerActivite(
                 "CONNEXION",
                 $"Connexion authentifiée ({utilisateurConnecte})",
@@ -755,39 +1289,18 @@ public class ServiceAPI
                 0m,
                 true,
                 utilisateurConnecte);
-            NotifierModificationDonnees();
+            SauvegarderEtatPartageSurDisque();
+            DonneesMarcheModifiees?.Invoke();
         }
 
         return connexion;
     }
 
-    /// <summary>
-    /// Alias booléen de connexion pour les interfaces MVVM légères.
-    /// </summary>
-    public async Task<bool> LoginAsync(string email, string password)
-    {
-        try
-        {
-            var rep = await SeConnecterAsync(email, password);
-            return rep != null && !string.IsNullOrWhiteSpace(rep.JetonAcces);
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    // =========================================================================
-    // F08: Catalogue (GET cards)
-    // =========================================================================
+    // Catalogue et fiches voitures --------------------------------------
 
     /// <summary>
-    /// Récupère la liste des cartes du catalogue avec filtrage optionnel par recherche textuelle et rareté.
-    /// En mode production, enrichit les cartes du serveur avec les vraies photos/prix et fusionne les 300 voitures.
+    /// Récupère la liste des 300 voitures du catalogue depuis GET /cards avec filtres optionnels
     /// </summary>
-    /// <param name="search">Terme de recherche filtrant la marque ou le modèle.</param>
-    /// <param name="rarete">Niveau de rareté (ex: LÉGENDAIRE, ÉPIQUE, RARE).</param>
-    /// <returns>Liste des objets Carte correspondant aux critères.</returns>
     public async Task<List<Carte>> RecupererCatalogueAsync(string? search = null, string? rarete = null)
     {
         await RestaurerAuthentificationAsync();
@@ -929,23 +1442,14 @@ public class ServiceAPI
         return filtre.ToList();
     }
 
-    /// <summary>
-    /// Alias pour compatibilité avec le code de référence BTS SIO (RecupererCartesAsync).
-    /// </summary>
     public Task<List<Carte>> RecupererCartesAsync(string? search = null, string? rarete = null)
     {
         return RecupererCatalogueAsync(search, rarete);
     }
 
-    // =========================================================================
-    // F09: Fiche détaillée de carte (GET cards/{id})
-    // =========================================================================
-
     /// <summary>
-    /// Récupère la fiche technique complète d'une carte spécifique via son identifiant unique.
+    /// Récupère la fiche détaillée d'une voiture via GET /cards/{id}
     /// </summary>
-    /// <param name="id">Identifiant de la carte (UUID ou code texte).</param>
-    /// <returns>La carte avec toutes ses spécifications officielles.</returns>
     public async Task<Carte> RecupererFicheCarteAsync(string id)
     {
         if (string.IsNullOrWhiteSpace(id))
@@ -989,11 +1493,8 @@ public class ServiceAPI
     }
 
     /// <summary>
-    /// Récupère l'historique des cotations boursières d'une voiture depuis GET /cards/{id}/quotes (Règle métier RM001).
-    /// Calcule la hauteur proportionnelle de chaque point pour tracer la courbe de marché.
+    /// Récupère les derniers prix d'une voiture depuis GET /cards/{id}/quotes pour tracer la courbe de marché
     /// </summary>
-    /// <param name="carte">La carte dont on souhaite afficher la courbe de marché.</param>
-    /// <returns>Liste des derniers points de cotation du marché.</returns>
     public async Task<List<PointCotationMarche>> RecupererHistoriqueCoursAsync(Carte? carte)
     {
         var points = new List<PointCotationMarche>();
@@ -1071,6 +1572,25 @@ public class ServiceAPI
                             .Where(p => p.Prix > 0)
                             .TakeLast(8)
                             .ToList();
+
+                        if (estModeProduction && points.Count > 0)
+                        {
+                            var refLocale = TrouverCarteReferenceLocale(carte);
+                            decimal prixCible = (refLocale != null && refLocale.PrixOfficiel > 0m)
+                                ? refLocale.PrixOfficiel
+                                : carte.PrixOfficiel;
+                            decimal dernierPrixServeur = points.Last().Prix;
+
+                            if (prixCible > 0m && dernierPrixServeur > 0m &&
+                                (dernierPrixServeur > prixCible * 1.15m || dernierPrixServeur < prixCible * 0.85m))
+                            {
+                                decimal facteurEchelle = prixCible / dernierPrixServeur;
+                                foreach (var pt in points)
+                                {
+                                    pt.Prix = Math.Round(pt.Prix * facteurEchelle, 0);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1124,7 +1644,7 @@ public class ServiceAPI
                 }
             }
 
-            // Synchronise le dernier cours reçu et son horodatage sur la carte (RM001)
+            // Met à jour le dernier prix reçu et sa date sur la carte
             var dernierPoint = points.LastOrDefault();
             if (dernierPoint != null && estModeProduction)
             {
@@ -1144,15 +1664,11 @@ public class ServiceAPI
         return points;
     }
 
-    // =========================================================================
-    // F10: Portefeuille / Garage (GET portfolio)
-    // =========================================================================
+    // Garage et portefeuille --------------------------------------
 
     /// <summary>
-    /// Récupère le portefeuille complet de l'utilisateur (ses cartes possédées, la valorisation totale et le P&L net).
-    /// En mode production, corrige les photos et les valorisations du serveur et intègre les cartes de boosters/achats.
+    /// Récupère le garage et le solde du joueur connecté
     /// </summary>
-    /// <returns>Objet Portefeuille avec la liste des positions.</returns>
     public async Task<Portefeuille> RecupererPortefeuilleAsync()
     {
         await RestaurerAuthentificationAsync();
@@ -1186,6 +1702,11 @@ public class ServiceAPI
         if (!estModeProduction)
             return portefeuille;
 
+        if (EstExecutionApplicationReelle)
+        {
+            await SynchroniserDepuisServeurDistantAsync();
+        }
+
         // Mode production : chaque étudiant (alice, bob, charlie) démarre à zéro (0 voiture, 0 Jeton)
         // et fait évoluer son Patrimoine et son Portefeuille en ouvrant des boosters et en échangeant sur le Marché.
         var garageActuel = ObtenirGarageUtilisateurCourant();
@@ -1205,16 +1726,11 @@ public class ServiceAPI
         return portefeuille.CartesPossedees ?? new ObservableCollection<CartePossedee>();
     }
 
-    // =========================================================================
-    // F11: Offres du marché (GET cards/{id}/offers ou GET offers)
-    // =========================================================================
+    // Marché, achats et ventes --------------------------------------
 
     /// <summary>
-    /// Récupère les offres de vente actives sur la place de marché, globalement ou pour une carte donnée.
-    /// En mode production, supplée l'absence de GET /offers global sur le serveur Groupe 2 avec des offres réalistes.
+    /// Récupère la liste des annonces en vente sur le marché
     /// </summary>
-    /// <param name="cardId">Identifiant optionnel d'une carte pour restreindre les offres.</param>
-    /// <returns>Liste des offres de vente actives.</returns>
     public async Task<List<Offre>> RecupererOffresAsync(string? cardId = null)
     {
         await RestaurerAuthentificationAsync();
@@ -1227,6 +1743,10 @@ public class ServiceAPI
 
         if (estModeProduction)
         {
+            if (EstExecutionApplicationReelle)
+            {
+                await SynchroniserDepuisServeurDistantAsync();
+            }
             return ObtenirOffresProductionEnrichies(cardId);
         }
 
@@ -1281,16 +1801,9 @@ public class ServiceAPI
         return resultat.ToList();
     }
 
-    // =========================================================================
-    // F12: Achat immédiat d'une offre (POST orders/buy avec Idempotency-Key)
-    // =========================================================================
-
     /// <summary>
-    /// Exécute l'achat immédiat d'une offre sur le marché en appliquant la règle RM006 (clé d'idempotence UUIDv4).
-    /// Débite la valeur en Jetons depuis le Portefeuille liquide et ajoute la voiture au Patrimoine (Garage).
+    /// Permet d'acheter une voiture sur le marché via POST /orders/buy
     /// </summary>
-    /// <param name="offreId">Identifiant de l'offre à acheter.</param>
-    /// <returns>Vrai si l'achat a été confirmé par l'API.</returns>
     public async Task<bool> AcheterOffreAsync(string offreId)
     {
         if (string.IsNullOrWhiteSpace(offreId))
@@ -1361,7 +1874,7 @@ public class ServiceAPI
 
                 if (offreLocale.Carte != null)
                 {
-                    // === Actualisation dynamique du cours de marché selon la transaction de vente (RM001) ===
+                    // Mise à jour du prix de marché de la voiture (moyenne entre l'ancien prix et le prix de vente)
                     decimal prixPrecedent = offreLocale.Carte.PrixOfficiel;
                     decimal prixVente = offreLocale.Prix;
                     if (prixPrecedent > 0m && prixVente > 0m)
@@ -1420,15 +1933,9 @@ public class ServiceAPI
         return true;
     }
 
-    // =========================================================================
-    // F13: Réservation d'une offre (POST offers/{id}/reservations)
-    // =========================================================================
-
     /// <summary>
-    /// Pose un verrou temporaire (15 minutes) sur une offre pour bloquer l'achat par d'autres utilisateurs (RM003/RM004).
+    /// Réserve une offre sur le marché pendant 15 minutes
     /// </summary>
-    /// <param name="offreId">Identifiant de l'offre à réserver.</param>
-    /// <returns>Vrai si la réservation a été acceptée.</returns>
     public async Task<bool> ReserverOffreAsync(string offreId)
     {
         if (string.IsNullOrWhiteSpace(offreId))
@@ -1477,17 +1984,9 @@ public class ServiceAPI
         return true;
     }
 
-    // =========================================================================
-    // F14: Création d'une offre de vente (POST offers) & Vente directe Garage
-    // =========================================================================
-
     /// <summary>
-    /// Met en vente un exemplaire possédé de son garage sur le marché public.
-    /// Tant que la voiture n'est pas achetée par un autre joueur, elle reste dans le garage de son propriétaire avec le statut En vente.
+    /// Met en vente une voiture du garage sur le marché (le prix saisi est en jetons)
     /// </summary>
-    /// <param name="copyId">Identifiant de l'exemplaire possédé à vendre.</param>
-    /// <param name="prix">Prix demandé en Jetons ou en Euros (doit être > 0).</param>
-    /// <returns>L'objet Offre créé avec son identifiant et statut.</returns>
     public async Task<Offre> CreerOffreAsync(string copyId, decimal prix)
     {
         if (string.IsNullOrWhiteSpace(copyId))
@@ -1510,7 +2009,7 @@ public class ServiceAPI
             }
         }
 
-        decimal prixNormaliseEuros = (estModeProduction && prix < 10000m)
+        decimal prixNormaliseEuros = estModeProduction
             ? Math.Round(prix * Carte.TauxConversionJeton, 0)
             : prix;
 
@@ -1576,8 +2075,7 @@ public class ServiceAPI
         {
             if (offre.Carte != null)
                 EnrichirCarte(offre.Carte);
-            if (offre.Prix < 10000m)
-                offre.Prix = prixNormaliseEuros;
+            offre.Prix = prixNormaliseEuros;
 
             offresSession.Insert(0, offre);
 
@@ -1596,8 +2094,7 @@ public class ServiceAPI
     }
 
     /// <summary>
-    /// Retire (annule) une offre de vente active publiée par l'étudiant connecté (EF032).
-    /// La voiture redevient immédiatement libre dans son Garage.
+    /// Permet au vendeur d'annuler son offre de vente
     /// </summary>
     public Task<bool> RetirerOffreAsync(string offreId)
     {
@@ -1627,20 +2124,14 @@ public class ServiceAPI
         return Task.FromResult(true);
     }
 
-    /// <summary>
-    /// Alias de création d'offre pour compatibilité multi-nommage.
-    /// </summary>
     public async Task<Offre> PublierOffreAsync(string copyId, decimal prix)
     {
         return await CreerOffreAsync(copyId, prix);
     }
 
     /// <summary>
-    /// Vend immédiatement une voiture du Garage (Patrimoine) et crédite sa valeur en Jetons (Prix / 1 000)
-    /// directement dans le Portefeuille liquide du compte pour permettre l'achat de voitures sur le Marché.
+    /// Vend directement une voiture du garage contre sa valeur en jetons
     /// </summary>
-    /// <param name="exemplaire">Exemplaire possédé à vendre.</param>
-    /// <returns>Le montant en Jetons crédité sur le Portefeuille.</returns>
     public Task<decimal> VendreCarteGarageAsync(CartePossedee exemplaire)
     {
         if (exemplaire == null)
@@ -1675,14 +2166,11 @@ public class ServiceAPI
         return Task.FromResult(jetonsCredites);
     }
 
-    // =========================================================================
-    // F15: Déballage de booster (POST boosters/open - 3 cartes par booster)
-    // =========================================================================
+    // Ouverture des boosters --------------------------------------
 
     /// <summary>
-    /// Ouvre un paquet de cartes (booster) et délivre 3 cartes automobiles selon la pyramide de rareté officielle.
+    /// Ouvre un booster et tire 3 voitures selon leur rareté
     /// </summary>
-    /// <returns>La liste des cartes obtenues (3 cartes en production).</returns>
     public async Task<List<Carte>> OuvrirBoosterAsync()
     {
         await RestaurerAuthentificationAsync();
@@ -1838,15 +2326,11 @@ public class ServiceAPI
         return tirage;
     }
 
-    // =========================================================================
-    // F32 / F34: Cadeaux et transfert de carte entre étudiants (RM009, EF060, EF061)
-    // =========================================================================
+    // Cadeaux et historique d'activité --------------------------------------
 
     /// <summary>
-    /// Vérifie si un exemplaire possédé est actuellement engagé dans une offre active sur le marché (Règles RM003 et EF061).
+    /// Vérifie si une voiture du garage est actuellement mise en vente sur le marché
     /// </summary>
-    /// <param name="exemplaire">L'exemplaire de voiture à vérifier.</param>
-    /// <returns>Vrai si l'exemplaire est déjà mis en vente.</returns>
     public bool ExemplaireEstEnVente(CartePossedee? exemplaire)
     {
         if (exemplaire == null)
@@ -1861,21 +2345,18 @@ public class ServiceAPI
     }
 
     /// <summary>
-    /// Enregistre le don d'un exemplaire possédé à un autre compte étudiant (alice, bob ou charlie)
-    /// conformément aux règles RM009, EF060 et EF061.
+    /// Transfère une voiture du garage en cadeau à un autre joueur (alice, bob ou charlie)
     /// </summary>
     public async Task<bool> OffrirCarteAsync(CartePossedee exemplaire, string destinataire)
     {
         if (exemplaire == null || string.IsNullOrWhiteSpace(destinataire))
             return false;
 
-        // Règle EF061 / RM003 : Empêcher l'offre d'une carte engagée dans une vente
         if (ExemplaireEstEnVente(exemplaire))
             throw new InvalidOperationException("Cette voiture ne peut pas être offerte car elle est actuellement mise en vente sur le marché.");
 
         await RestaurerAuthentificationAsync();
 
-        // Tentative d'appel du endpoint officiel POST /gifts de l'API
         try
         {
             string idCarteServeur = exemplaire.Carte?.Identifiant ?? exemplaire.Identifiant;
@@ -1893,18 +2374,18 @@ public class ServiceAPI
         }
         catch
         {
-            // Tolérance hors-ligne pour la simulation de session
+            // Ignore si le serveur ne répond pas sur /gifts
         }
 
         string cleExemplaire = !string.IsNullOrWhiteSpace(exemplaire.IdentifiantExemplaire)
             ? exemplaire.IdentifiantExemplaire
             : exemplaire.Identifiant;
 
-        // Retrait de la collection du donateur (REC12)
+        // Retrait de la voiture du garage de celui qui offre
         ObtenirGarageUtilisateurCourant().RemoveAll(c =>
             string.Equals(c.IdentifiantExemplaire ?? c.Identifiant, cleExemplaire, StringComparison.OrdinalIgnoreCase));
 
-        // Ajout dans le garage du bénéficiaire (RM009)
+        // Ajout de la voiture dans le garage de celui qui reçoit le cadeau
         string cleDestinataire = destinataire.Trim().ToLowerInvariant();
         if (!garagesParUtilisateur.ContainsKey(cleDestinataire))
         {
@@ -1912,11 +2393,11 @@ public class ServiceAPI
         }
         garagesParUtilisateur[cleDestinataire].Insert(0, exemplaire);
 
-        // Journalisation de l'opération pour le donateur et le bénéficiaire (EF062, REC12)
+        // Ajout dans l'historique d'activité des deux joueurs
         EnregistrerActivite(
             "CADEAU",
             $"🎁 Don de {exemplaire.Carte?.NomComplet ?? "Voiture"} à {destinataire.Trim().ToUpper()}",
-            $"Transfert sans contrepartie financière vers le garage de {destinataire.Trim().ToUpper()} (RM009)",
+            $"Transfert gratuit vers le garage de {destinataire.Trim().ToUpper()}",
             -exemplaire.ValeurActuelle,
             false,
             utilisateurConnecte);
@@ -1924,7 +2405,7 @@ public class ServiceAPI
         EnregistrerActivite(
             "CADEAU",
             $"🎁 Cadeau reçu : {exemplaire.Carte?.NomComplet ?? "Voiture"} de {utilisateurConnecte.ToUpper()}",
-            $"Voiture offerte gratuitement par {utilisateurConnecte.ToUpper()} et ajoutée à votre garage (RM009)",
+            $"Voiture offerte gratuitement par {utilisateurConnecte.ToUpper()} et ajoutée à votre garage",
             exemplaire.ValeurActuelle,
             true,
             cleDestinataire);
@@ -1934,7 +2415,7 @@ public class ServiceAPI
     }
 
     /// <summary>
-    /// Ajoute une entrée horodatée au journal d'activité de la session sans aucune propriété visuelle C#.
+    /// Ajoute une opération dans l'historique des activités
     /// </summary>
     public void EnregistrerActivite(
         string typeOperation,

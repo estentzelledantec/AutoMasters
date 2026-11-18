@@ -1,4 +1,5 @@
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -8,10 +9,7 @@ using Microsoft.Maui.Controls;
 namespace AutoMasters.VuesModeles;
 
 /// <summary>
-/// ViewModel de la page de connexion (Feature F19, F20).
-/// Conforme aux standards BTS SIO SLAM 2ème année et CommunityToolkit.Mvvm.
-/// Gère la validation des champs, l'appel à ServiceAPI.SeConnecterAsync,
-/// la navigation Shell et l'effacement sécurisé du mot de passe en cas d'échec.
+/// ViewModel de la page de connexion
 /// </summary>
 public partial class ConnexionVueModele : ObservableObject
 {
@@ -19,22 +17,22 @@ public partial class ConnexionVueModele : ObservableObject
 
     private readonly ServiceAPI serviceApi;
 
+    // [ObservableProperty] génère automatiquement la propriété publique Identifiant reliée au champ Entry en XAML
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Identifiant))]
-    private string email = "";
+    private string identifiant = "";
 
+    // [ObservableProperty] génère automatiquement la propriété publique MotDePasse reliée au champ Entry en XAML
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Password))]
     private string motDePasse = "";
 
+    // Message d'erreur affiché en rouge sous le bouton si la connexion échoue
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(AUnMessage))]
     private string message = "";
 
+    // Indique si une requête de connexion est en cours pour afficher la roue de chargement
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(EstDisponible))]
-    [NotifyPropertyChangedFor(nameof(IsBusy))]
-    [NotifyPropertyChangedFor(nameof(IsNotBusy))]
     private bool estOccupe;
 
     #endregion
@@ -42,10 +40,8 @@ public partial class ConnexionVueModele : ObservableObject
     #region Constructeurs
 
     /// <summary>
-    /// Constructeur avec injection du service d'API.
-    /// Utilise par défaut le singleton ServiceAPI.Instance.
+    /// Constructeur du ViewModel de connexion
     /// </summary>
-    /// <param name="serviceApi">Instance du service API.</param>
     public ConnexionVueModele(ServiceAPI? serviceApi = null)
     {
         this.serviceApi = serviceApi ?? ServiceAPI.Instance;
@@ -56,53 +52,23 @@ public partial class ConnexionVueModele : ObservableObject
     #region Getter/Setter
 
     /// <summary>
-    /// Indique si les commandes et contrôles d'action sont disponibles pour l'utilisateur.
+    /// Permet de désactiver le bouton Se connecter pendant le chargement (inverse de EstOccupe)
     /// </summary>
     public bool EstDisponible => !EstOccupe;
 
     /// <summary>
-    /// Alias standard pour IsBusy.
-    /// </summary>
-    public bool IsBusy => EstOccupe;
-
-    /// <summary>
-    /// Alias standard pour IsNotBusy.
-    /// </summary>
-    public bool IsNotBusy => !EstOccupe;
-
-    /// <summary>
-    /// Indique si un message d'erreur ou d'information doit être affiché.
+    /// Indique s'il y a un message d'erreur à afficher à l'écran
     /// </summary>
     public bool AUnMessage => !string.IsNullOrWhiteSpace(Message);
-
-    /// <summary>
-    /// Alias de compatibilité pour le champ Identifiant.
-    /// </summary>
-    public string Identifiant
-    {
-        get => Email;
-        set => Email = value ?? "";
-    }
-
-    /// <summary>
-    /// Alias de compatibilité pour le mot de passe.
-    /// </summary>
-    public string Password
-    {
-        get => MotDePasse;
-        set => MotDePasse = value ?? "";
-    }
 
     #endregion
 
     #region Methodes
 
     /// <summary>
-    /// Commande asynchrone d'authentification.
-    /// Valide les champs obligatoires et le format email côté client,
-    /// interroge ServiceAPI, navigue vers le catalogue en cas de succès,
-    /// ou efface le mot de passe en préservant l'email en cas d'échec.
+    /// Vérifie les champs saisis, appelle l'API pour connecter le joueur et ouvre la page Catalogue
     /// </summary>
+    // [RelayCommand] crée automatiquement la commande SeConnecterCommand utilisée par le bouton en XAML
     [RelayCommand]
     private async Task SeConnecterAsync()
     {
@@ -111,7 +77,7 @@ public partial class ConnexionVueModele : ObservableObject
 
         Message = "";
 
-        // 1. Validation de saisie obligatoire
+        // On vérifie que l'utilisateur a bien rempli son identifiant et son mot de passe
         if (string.IsNullOrWhiteSpace(Identifiant) || string.IsNullOrWhiteSpace(MotDePasse))
         {
             Message = "Veuillez saisir votre identifiant et votre mot de passe.";
@@ -119,7 +85,6 @@ public partial class ConnexionVueModele : ObservableObject
         }
 
         string identifiantSaisi = Identifiant.Trim();
-
         EstOccupe = true;
 
         try
@@ -128,11 +93,11 @@ public partial class ConnexionVueModele : ObservableObject
 
             if (reponse != null && !string.IsNullOrWhiteSpace(reponse.JetonAcces))
             {
-                // Succès : effacement sécurisé du mot de passe en mémoire
+                // On vide le mot de passe par sécurité une fois connecté
                 MotDePasse = string.Empty;
                 Message = "";
 
-                // Navigation Shell vers les onglets principaux (Catalogue par défaut)
+                // Redirection vers l'onglet Catalogue
                 if (Shell.Current != null)
                 {
                     await Shell.Current.GoToAsync("//MainTabs/Catalogue");
@@ -151,7 +116,7 @@ public partial class ConnexionVueModele : ObservableObject
         }
         catch (Exception ex)
         {
-            // En cas d'échec : effacer le mot de passe mais conserver l'email (F19_B02)
+            // En cas d'erreur, on vide le mot de passe mais on garde l'identifiant saisi
             MotDePasse = string.Empty;
 
             string details = ex.Message ?? "";

@@ -13,9 +13,7 @@ using AutoMasters.Vues;
 namespace AutoMasters.VuesModeles;
 
 /// <summary>
-/// Vue-modèle de la page du Catalogue des voitures (Fonctionnalité F21).
-/// Gère le chargement des voitures depuis ServiceAPI, la recherche par texte,
-/// le filtrage par rareté et l'ouverture de la fiche détaillée d'une carte.
+/// ViewModel de la page du Catalogue des voitures
 /// </summary>
 public partial class CatalogueVueModele : ObservableObject
 {
@@ -30,9 +28,11 @@ public partial class CatalogueVueModele : ObservableObject
     /// </summary>
     public const int TaillePage = 14;
 
+    // [ObservableProperty] crée automatiquement la propriété publique Cartes et met à jour l'affichage XAML quand elle change
     [ObservableProperty]
     private ObservableCollection<Carte> cartes = new();
 
+    // [NotifyPropertyChangedFor] recalcule aussi les propriétés de pagination quand la page actuelle change
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PeutAllerPagePrecedente))]
     [NotifyPropertyChangedFor(nameof(PeutAllerPageSuivante))]
@@ -85,18 +85,10 @@ public partial class CatalogueVueModele : ObservableObject
 
     #region Constructeurs
 
-    /// <summary>
-    /// Constructeur par défaut utilisant le singleton ServiceAPI.
-    /// Utilisé lors de l'instanciation XAML de la vue.
-    /// </summary>
     public CatalogueVueModele() : this(ServiceAPI.Instance)
     {
     }
 
-    /// <summary>
-    /// Constructeur avec injection du service HTTP pour les tests unitaires déterministes.
-    /// </summary>
-    /// <param name="serviceApi">Instance de ServiceAPI.</param>
     public CatalogueVueModele(ServiceAPI? serviceApi)
     {
         this.serviceApi = serviceApi ?? ServiceAPI.Instance;
@@ -163,17 +155,13 @@ public partial class CatalogueVueModele : ObservableObject
 
     #region Methodes
 
-    /// <summary>
-    /// Détecte les modifications du texte de recherche et recalcule les filtres immédiatement.
-    /// </summary>
+    // Détecte les modifications du texte de recherche et recalcule les filtres immédiatement.
     partial void OnTexteRechercheChanged(string value)
     {
         AppliquerFiltres();
     }
 
-    /// <summary>
-    /// Détecte les modifications du filtre de rareté et recalcule les filtres immédiatement.
-    /// </summary>
+    // Détecte les modifications du filtre de rareté et recalcule les filtres immédiatement.
     partial void OnRareteSelectionneeChanged(string value)
     {
         AppliquerFiltres();
@@ -276,9 +264,7 @@ public partial class CatalogueVueModele : ObservableObject
         MettreAJourPageCatalogue();
     }
 
-    /// <summary>
-    /// Permet de changer directement de page lorsque l'utilisateur saisit un numéro de page (ex: 13).
-    /// </summary>
+    // Permet de changer directement de page lorsque l'utilisateur saisit un numéro de page (ex: 13).
     partial void OnSaisiePageChanged(string value)
     {
         if (int.TryParse(value?.Trim(), out int numeroPage))

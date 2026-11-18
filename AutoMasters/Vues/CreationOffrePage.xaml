@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!-- Page permettant de mettre en vente une voiture de son garage sur le marché -->
+<!-- x:DataType="vm:CreationOffreVueModele" : relie la page à CreationOffreVueModele pour les Bindings -->
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
@@ -11,9 +13,11 @@
     Shell.NavBarIsVisible="False">
 
     <ScrollView>
+        <!-- Padding="20,24" : marge intérieure de la page / Spacing="20" : espace vertical entre chaque section -->
         <VerticalStackLayout Padding="20,24" Spacing="20">
             
-            <!-- En-tête -->
+            <!-- En-tête de la page -->
+            <!-- ColumnDefinitions="*,Auto" : la colonne 0 (*) prend toute la largeur disponible, la colonne 1 (Auto) s'adapte au bouton fermer -->
             <Grid ColumnDefinitions="*,Auto">
                 <VerticalStackLayout Grid.Column="0" Spacing="2">
                     <Label
@@ -26,6 +30,7 @@
                         FontSize="13"
                         TextColor="#9CA3AF" />
                 </VerticalStackLayout>
+                <!-- Bouton X en haut à droite pour fermer la page et revenir en arrière -->
                 <Button
                     Grid.Column="1"
                     Text="✕"
@@ -39,7 +44,7 @@
                     Command="{Binding AnnulerCommand}" />
             </Grid>
 
-            <!-- Étape 1 : Sélection du véhicule -->
+            <!-- Étape 1 : Sélection de la voiture dans le garage -->
             <VerticalStackLayout Spacing="8">
                 <Label
                     Text="1. CHOISIR UN VÉHICULE DU GARAGE"
@@ -48,11 +53,15 @@
                     TextColor="#E63946"
                     CharacterSpacing="1" />
 
+                <!-- CollectionView affiche la liste des voitures disponibles dans le garage -->
+                <!-- SelectedItem="{Binding CarteSelectionnee, Mode=TwoWay}" : synchronise la voiture cliquée avec le ViewModel dans les deux sens -->
+                <!-- SelectionMode="Single" : permet de sélectionner une seule voiture à la fois -->
                 <CollectionView
                     ItemsSource="{Binding CartesPossedees}"
                     SelectedItem="{Binding CarteSelectionnee, Mode=TwoWay}"
                     SelectionMode="Single"
                     HeightRequest="220">
+                    <!-- EmptyView : texte affiché si le joueur n'a aucune voiture à vendre -->
                     <CollectionView.EmptyView>
                         <Label
                             Text="Aucun véhicule disponible à la vente dans votre garage."
@@ -60,8 +69,10 @@
                             FontSize="13"
                             Margin="0,16" />
                     </CollectionView.EmptyView>
+                    <!-- DataTemplate : définit l'affichage d'une ligne de voiture -->
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="m:CartePossedee">
+                            <!-- Stroke : couleur de bordure / StrokeShape="RoundRectangle 10" : coins arrondis -->
                             <Border
                                 Stroke="#2A1E24"
                                 StrokeThickness="1"
@@ -69,6 +80,7 @@
                                 StrokeShape="RoundRectangle 10"
                                 Padding="10"
                                 Margin="0,0,0,8">
+                                <!-- VisualStateManager permet de changer la couleur de bordure en rouge (#E63946) quand la voiture est sélectionnée (Selected) -->
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup Name="CommonStates">
                                         <VisualState Name="Normal" />
@@ -81,6 +93,7 @@
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
 
+                                <!-- Grille à 2 colonnes : miniature photo de 60px à gauche, texte à droite (*) -->
                                 <Grid ColumnDefinitions="60,*" ColumnSpacing="12">
                                     <Border
                                         Grid.Column="0"
@@ -89,6 +102,7 @@
                                         HeightRequest="48"
                                         WidthRequest="60"
                                         BackgroundColor="#242426">
+                                        <!-- Aspect="AspectFill" : remplit tout le cadre photo sans déformer la voiture -->
                                         <Image Source="{Binding Carte.ImageUrl}" Aspect="AspectFill" />
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
@@ -106,10 +120,10 @@
                 </CollectionView>
             </VerticalStackLayout>
 
-            <!-- Étape 2 : Saisie du Prix -->
+            <!-- Étape 2 : Saisie du prix demandé en Jetons -->
             <VerticalStackLayout Spacing="8">
                 <Label
-                    Text="2. PRIX DE VENTE SOUHAITÉ (JETONS OU €)"
+                    Text="2. PRIX DE VENTE SOUHAITÉ (EN JETONS)"
                     FontSize="11"
                     FontAttributes="Bold"
                     TextColor="#E63946"
@@ -121,8 +135,9 @@
                     BackgroundColor="#1E1014"
                     StrokeShape="RoundRectangle 10"
                     Padding="14,4">
+                    <!-- Keyboard="Numeric" : affiche un clavier numérique pour saisir le prix en jetons -->
                     <Entry
-                        Placeholder="Exemple : 35 (Jetons) ou 35000 (€)"
+                        Placeholder="Exemple : 35, 250 ou 1000 (en Jetons)"
                         PlaceholderColor="#888888"
                         TextColor="#FFFFFF"
                         Keyboard="Numeric"
@@ -130,19 +145,19 @@
                         Text="{Binding PrixSaisi}" />
                 </Border>
                 <Label
-                    Text="1 Jeton = 1 000 € de valeur réelle (ex: 35 Jetons pour une voiture à 35 000 €)."
+                    Text="Saisissez uniquement le montant en Jetons (1 Jeton = 1 000 € · ex: 1000 Jetons = 1 000 000 €)."
                     FontSize="11"
                     TextColor="#6B7280" />
             </VerticalStackLayout>
 
-            <!-- Message d'erreur -->
+            <!-- Message d'erreur si aucun véhicule n'est choisi ou si le prix est invalide -->
             <Label
                 Text="{Binding MessageErreur}"
                 TextColor="#EF4444"
                 FontSize="13"
                 HorizontalTextAlignment="Center" />
 
-            <!-- Boutons d'Action -->
+            <!-- Boutons pour publier l'offre ou annuler -->
             <VerticalStackLayout Spacing="10" Margin="0,12,0,0">
                 <Button
                     Text="PUBLIER SUR LE MARCHÉ"
@@ -155,6 +170,7 @@
                     IsEnabled="{Binding EstDisponible}"
                     Command="{Binding CreerOffreCommand}" />
 
+                <!-- BackgroundColor="Transparent" avec BorderColor et BorderWidth="1" crée un bouton secondaire avec contour -->
                 <Button
                     Text="ANNULER"
                     FontSize="13"

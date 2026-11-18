@@ -3,10 +3,6 @@ using Microsoft.Maui.Controls;
 
 namespace AutoMasters;
 
-/// <summary>
-/// Coquille principale de navigation Shell conforme aux exigences BTS SIO SLAM.
-/// Respecte strictement la pureté du code-behind (F28) : aucune logique métier ni appel réseau.
-/// </summary>
 public partial class AppShell : Shell
 {
     #region Attributs
@@ -15,9 +11,6 @@ public partial class AppShell : Shell
 
     #region Constructeurs
 
-    /// <summary>
-    /// Initialise les composants graphiques Shell et enregistre les routes de détail.
-    /// </summary>
     public AppShell()
     {
         InitializeComponent();
@@ -33,7 +26,7 @@ public partial class AppShell : Shell
     #region Methodes
 
     /// <summary>
-    /// Enregistre les routes secondaires pour navigation modale ou détaillée.
+    /// Enregistre les routes pour naviguer vers la fiche d'une voiture ou la page de mise en vente
     /// </summary>
     private void EnregistrerRoutes()
     {

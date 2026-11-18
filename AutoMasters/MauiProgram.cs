@@ -5,11 +5,6 @@ using AutoMasters.VuesModeles;
 
 namespace AutoMasters;
 
-/// <summary>
-/// Point d'entrée de configuration de l'application .NET MAUI.
-/// Configure les polices, la journalisation et le conteneur d'injection de dépendances (DI).
-/// Conforme au standard BTS SIO SLAM 2ème année.
-/// </summary>
 public static class MauiProgram
 {
     #region Attributs
@@ -41,17 +36,11 @@ public static class MauiProgram
         constructeur.Logging.AddDebug();
 #endif
 
-        // =====================================================================
-        // ENREGISTREMENT DE L'INJECTION DE DÉPENDANCES (DI CONTAINER) (F28)
-        // =====================================================================
-
-        // 1. Services : ServiceAPI singleton unique
+        // Enregistrement du service API et de la navigation
         constructeur.Services.AddSingleton<ServiceAPI>(sp => ServiceAPI.Instance);
-
-        // 2. Coquille de navigation Shell
         constructeur.Services.AddSingleton<AppShell>();
 
-        // 3. ViewModels
+        // Enregistrement des ViewModels
         constructeur.Services.AddTransient<ConnexionVueModele>();
         constructeur.Services.AddTransient<CatalogueVueModele>();
         constructeur.Services.AddTransient<FicheCarteVueModele>();
@@ -62,7 +51,7 @@ public static class MauiProgram
         constructeur.Services.AddTransient<OrdresVueModele>();
         constructeur.Services.AddTransient<ActiviteVueModele>();
 
-        // 4. Vues (Pages)
+        // Enregistrement des pages (Vues)
         constructeur.Services.AddTransient<ConnexionPage>();
         constructeur.Services.AddTransient<CataloguePage>();
         constructeur.Services.AddTransient<FicheCartePage>();

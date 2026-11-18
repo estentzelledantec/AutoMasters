@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!-- Page qui affiche l'historique des opérations du joueur (boosters, achats, ventes, réservations, cadeaux) -->
+<!-- x:DataType="vm:ActiviteVueModele" : relie cette page à ActiviteVueModele pour les Bindings -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:AutoMasters.VuesModeles"
@@ -9,11 +11,10 @@
              BackgroundColor="#10080B"
              Shell.NavBarIsVisible="False">
 
+    <!-- RowDefinitions="Auto,Auto,Auto,*" : 3 lignes en haut qui s'adaptent à leur contenu (Auto) et la liste en bas (*) qui prend le reste de l'écran -->
     <Grid RowDefinitions="Auto,Auto,Auto,*">
 
-        <!-- ================================================================= -->
-        <!-- 1. EN-TÊTE JOURNAL D'ACTIVITÉ & PROFIL COMPTE GROUPE 2            -->
-        <!-- ================================================================= -->
+        <!-- En-tête de la page Activité (Colonne 0 : titres à gauche / Colonne 1 : boutons rafraîchir et déconnexion à droite) -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Padding="20,24,20,12">
             <VerticalStackLayout Grid.Column="0" Spacing="4">
                 <Label Text="JOURNAL D'ACTIVITÉ"
@@ -49,9 +50,7 @@
             </HorizontalStackLayout>
         </Grid>
 
-        <!-- ================================================================= -->
-        <!-- 2. BANDEAU STATISTIQUES DE SESSION                                -->
-        <!-- ================================================================= -->
+        <!-- Statistiques de la session -->
         <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12" Padding="20,0,20,14">
             <Border Grid.Column="0"
                     BackgroundColor="#1A0E12"
@@ -102,9 +101,7 @@
             </Border>
         </Grid>
 
-        <!-- ================================================================= -->
-        <!-- 3. FILTRES PAR TYPE D'OPÉRATION                                   -->
-        <!-- ================================================================= -->
+        <!-- Filtres par type d'opération -->
         <ScrollView Grid.Row="2" Orientation="Horizontal" HorizontalScrollBarVisibility="Never" Padding="20,0,20,12">
             <HorizontalStackLayout Spacing="8">
                 <Button Text="Toutes"
@@ -170,9 +167,7 @@
             </HorizontalStackLayout>
         </ScrollView>
 
-        <!-- ================================================================= -->
-        <!-- 4. LISTE DES TRANSACTIONS & OPÉRATIONS                            -->
-        <!-- ================================================================= -->
+        <!-- Liste des activités -->
         <RefreshView Grid.Row="3"
                      IsRefreshing="{Binding EstOccupe}"
                      Command="{Binding ChargerActivitesCommand}"
@@ -210,7 +205,7 @@
                                 Padding="16,14">
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
 
-                                <!-- Badge coloré du type d'opération en pur XAML -->
+                                <!-- Badge du type d'opération -->
                                 <Border Grid.Column="0"
                                         BackgroundColor="#E63946"
                                         StrokeShape="RoundRectangle 10"
@@ -258,7 +253,7 @@
                                            FontSize="11" />
                                 </VerticalStackLayout>
 
-                                <!-- Montant / Valorisation en pur XAML -->
+                                <!-- Montant en jetons -->
                                 <VerticalStackLayout Grid.Column="2"
                                                      VerticalOptions="Center"
                                                      HorizontalOptions="End">
